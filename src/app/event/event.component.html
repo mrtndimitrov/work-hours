@@ -1,0 +1,29 @@
+<p-panel [header]="getTitle()">
+  <ng-template pTemplate="icons">
+    <button *ngIf="event && !editMode" pButton class="p-panel-header-icon p-link" (click)="menu.toggle($event)">
+      <span class="pi pi-cog"></span>
+    </button>
+    <button *ngIf="event && editMode" pButton class="p-panel-header-icon p-link" (click)="toggleEditMode()">
+      <span class="pi pi-times"></span>
+    </button>
+    <p-menu #menu id="config_menu" [model]="editEventMenuItems" [popup]="true"></p-menu>
+  </ng-template>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <h5>Дата</h5>
+    <p-calendar formControlName="date" dateFormat="dd-mm-yy г."
+                [class.ng-dirty]="form.get('date')!.invalid && form.get('date')!.touched"></p-calendar>
+    <h5>Часове</h5>
+    <p-inputNumber formControlName="hours" [class.ng-dirty]="form.get('hours')!.invalid && form.get('hours')!.touched"
+                   [step]="0.5" [min]="0.5" [max]="24" [showButtons]="true" [maxFractionDigits]="1"></p-inputNumber>
+    <h5>Свършена работа</h5>
+    <textarea formControlName="workDone"
+              [class.ng-dirty]="form.get('workDone')!.invalid && form.get('workDone')!.touched" [rows]="3"
+              pInputTextarea [autoResize]="true"></textarea>
+    <h5>Причина за извънредния труд</h5>
+    <textarea formControlName="reason" [class.ng-dirty]="form.get('reason')!.invalid && form.get('reason')!.touched"
+              [rows]="3" pInputTextarea [autoResize]="true"></textarea>
+    <p *ngIf="editMode || event === null">
+      <button pButton type="submit" [label]="event === null ? 'Създай' : 'Обнови'"></button>
+    </p>
+  </form>
+</p-panel>
