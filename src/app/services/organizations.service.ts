@@ -15,24 +15,6 @@ export class OrganizationsService {
   constructor(private db: AngularFireDatabase, private messageService: MessageService,
               private authService: AuthenticationService) {}
 
-  async listOrganizations() {
-    const dbRef = ref(getDatabase());
-    const snapshot = await get(child(dbRef, 'organizations'));
-    if (snapshot.exists()) {
-      const organizations: Array<Organization> = [];
-      for (const item of Object.entries(snapshot.val())) {
-        const [key, value]: [string, any] = item;
-        organizations.push({
-          key: key,
-          name: value.name
-        });
-      }
-      return organizations;
-    } else {
-      return [];
-    }
-  }
-
   async listMyOrganizations() {
     const user = await this.authService.getCurrentUser();
     const dbRef = ref(getDatabase());
@@ -44,6 +26,8 @@ export class OrganizationsService {
         const organization: Organization = await this.getOrganization(key);
         organization.myRole = value.role;
         organization.isDefault = value.default;
+        organization.invites = organization.invites ? Object.entries(organization.invites).map(([k, v]) => { return {key: k, ...v}}) : [];
+        organization.users = organization.users ? Object.entries(organization.users).map(([k, v]) => { return {key: k, ...v}}) : [];
         organizations.push(organization);
       }
       return organizations;
@@ -51,7 +35,7 @@ export class OrganizationsService {
     return [];
   }
 
-  async getOrganization(key: string) {
+  private async getOrganization(key: string) {
     const dbRef = ref(getDatabase());
     const snapshot = await get(child(dbRef, `organizations/${key}`));
     return {key, ...snapshot.val()};
@@ -61,9 +45,9 @@ export class OrganizationsService {
     try {
       const db = getDatabase();
       // check first if organization with such key exists
-      const organizations: Array<Organization> = await this.listOrganizations();
-      for (const o of organizations) {
-        if (o.key === organization.key) {
+      const organizationKeys: Array<string> = await this.getOrganizationKeys();
+      for (const key of organizationKeys) {
+        if (key === organization.key) {
           this.messageService.add({
             severity: 'error',
             summary: 'Създаване на организация',
@@ -97,6 +81,21 @@ export class OrganizationsService {
     }
   }
 
+  private async getOrganizationKeys() {
+    const dbRef = ref(getDatabase());
+    const snapshot = await get(child(dbRef, 'organizations'));
+    if (snapshot.exists()) {
+      const organizationKeys: Array<string> = [];
+      for (const item of Object.entries(snapshot.val())) {
+        const [key, _value]: [string, any] = item;
+        organizationKeys.push(key);
+      }
+      return organizationKeys;
+    } else {
+      return [];
+    }
+  }
+
   async setDefaultOrganization(key: string) {
     const dbRef = ref(getDatabase());
     const user = await this.authService.getCurrentUser();
@@ -106,8 +105,8 @@ export class OrganizationsService {
     }
   }
 
-  async getCurrentOrganization(): Promise<Organization> {
-    if (!this.currentOrganization) {
+  async getCurrentOrganization(refresh: boolean = false): Promise<Organization> {
+    if (!this.currentOrganization || refresh) {
       const organizations: Organization[] = await this.listMyOrganizations();
       for (const organization of organizations) {
         if (organization.isDefault) {

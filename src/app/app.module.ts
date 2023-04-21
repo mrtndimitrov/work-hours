@@ -40,6 +40,7 @@ import { TableModule } from 'primeng/table';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DropdownModule } from 'primeng/dropdown';
+import { UsersComponent } from './users/users.component';
 
 @NgModule({
   declarations: [
@@ -48,7 +49,8 @@ import { DropdownModule } from 'primeng/dropdown';
     CalendarComponent,
     EventComponent,
     LoginComponent,
-    SettingsComponent
+    SettingsComponent,
+    UsersComponent
   ],
   imports: [
     BrowserModule,

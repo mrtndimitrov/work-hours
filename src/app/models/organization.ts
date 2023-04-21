@@ -3,4 +3,6 @@ export interface Organization {
   name: string;
   myRole?: string;
   isDefault?: boolean;
+  users: any[];
+  invites: any[];
 }

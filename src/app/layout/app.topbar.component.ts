@@ -23,7 +23,7 @@ export class AppTopBarComponent implements OnInit {
 
   @ViewChild('topbarmenu') menu!: ElementRef;
 
-  constructor(public layoutService: LayoutService, private router: Router,
+  constructor(public layoutService: LayoutService, public router: Router,
               private authService: AuthenticationService, public organizationsService: OrganizationsService) {
   }
 

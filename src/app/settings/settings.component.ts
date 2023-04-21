@@ -41,7 +41,7 @@ export class SettingsComponent implements OnInit{
       return;
     }
     const {key, name} = this.newForm.value;
-    await this.organizationsService.addOrganization({key: key!, name: name!});
+    await this.organizationsService.addOrganization({key: key!, name: name!, invites: [], users: []});
     this.newForm.get('key')?.setValue('');
     this.newForm.get('name')?.setValue('');
   }

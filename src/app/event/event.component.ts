@@ -9,6 +9,7 @@ import { EventsService } from '../services/events.service';
 import { Event } from '../models/event';
 import { MessageService } from 'primeng/api';
 import { validateAllFormFields } from '../shared/helpers';
+import {AppComponent} from "../app.component";
 
 @Component({
   selector: 'app-event',
@@ -70,7 +71,9 @@ export class EventComponent {
     if (this.form.invalid) {
       validateAllFormFields(this.form);
       return;
-    } else if (this.event) {
+    }
+    AppComponent.toggleProgressBar();
+    if (this.event) {
       this.event.date = this.form.get('date')?.value;
       this.event.hours = this.form.get('hours')?.value;
       this.event.reason = this.form.get('reason')?.value;

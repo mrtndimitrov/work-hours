@@ -14,7 +14,7 @@
 
 
   <p-dropdown [options]="organizations" optionLabel="name" [(ngModel)]="selectedOrganization"
-              (onChange)="organizationsService.setCurrentOrganization(selectedOrganization!)"></p-dropdown>
+              (onChange)="organizationsService.setCurrentOrganization(selectedOrganization!); router.navigate(['/']);"></p-dropdown>
 
   <div #topbarmenu class="layout-topbar-menu"
        [ngClass]="{'layout-topbar-menu-mobile-active': layoutService.state.profileSidebarVisible}">

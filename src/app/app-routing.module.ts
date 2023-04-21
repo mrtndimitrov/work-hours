@@ -7,6 +7,7 @@ import { EventComponent } from './event/event.component';
 import { LoginComponent } from './login/login.component';
 import { AuthGuard } from './guards/auth.guard';
 import { SettingsComponent } from './settings/settings.component';
+import { UsersComponent } from "./users/users.component";
 
 const routes: Routes = [
   {
@@ -15,7 +16,9 @@ const routes: Routes = [
       {path: 'settings', component: SettingsComponent},
       {path: 'calendar', component: CalendarComponent},
       {path: 'new-event', component: EventComponent},
-      {path: 'event/:eventId', component: EventComponent}]
+      {path: 'event/:eventId', component: EventComponent},
+      {path: 'users', component: UsersComponent},
+      {path: 'invites', component: UsersComponent}]
   },
   {path: 'login', component: LoginComponent},
   {path: 'register', component: LoginComponent}

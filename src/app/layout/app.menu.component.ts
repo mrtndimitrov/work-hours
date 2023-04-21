@@ -43,7 +43,7 @@ export class AppMenuComponent implements OnInit {
         label: 'Потребители',
         items: [
           {label: 'Активни', icon: 'pi pi-users', routerLink: ['/users']},
-          {label: 'Поканени', icon: 'pi pi-user-plus', routerLink: ['/invited-users']},
+          {label: 'Поканени', icon: 'pi pi-user-plus', routerLink: ['/invites']},
         ]
       });
     }
