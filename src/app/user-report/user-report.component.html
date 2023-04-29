@@ -1,0 +1,29 @@
+<p-panel header="Въведени извънредни часове по месеци">
+  <p-dropdown [options]="months" optionLabel="value" optionValue="key" [(ngModel)]="selectedMonth"></p-dropdown>
+  <p-table *ngIf="selectedMonth" [value]="groupedEvents[selectedMonth].events" [tableStyle]="{ 'min-width': '50rem' }">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Дата</th>
+        <th>Почивен ден</th>
+        <th>Брой часове</th>
+        <th>Извършена работа</th>
+        <th>Причина за извънредния труд</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-event>
+      <tr>
+        <td>{{ event.date | date: 'dd.MM.yyyy' }}</td>
+        <td>{{ event.hours }}</td>
+        <td>{{ event.holiday ? 'Да' : 'Не' }}</td>
+        <td>{{ event.workDone }}</td>
+        <td>{{ event.reason }}</td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="summary">
+      <div class="flex align-items-center justify-content-between">
+        Общо брой часове: {{ groupedEvents[selectedMonth].workday_hours }} часа в работни дни;
+        {{ groupedEvents[selectedMonth].holiday_hours }} часа в почивни дни
+      </div>
+    </ng-template>
+  </p-table>
+</p-panel>

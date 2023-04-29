@@ -23,8 +23,11 @@ export class AppTopBarComponent implements OnInit {
 
   @ViewChild('topbarmenu') menu!: ElementRef;
 
-  constructor(public layoutService: LayoutService, public router: Router,
+  constructor(public layoutService: LayoutService, public router: Router, private usersService: UsersService,
               private authService: AuthenticationService, public organizationsService: OrganizationsService) {
+    this.organizationsService.onMyOrganizationsChangeSubscribe(() => {
+      this.ngOnInit();
+    });
   }
 
   async ngOnInit() {
@@ -34,6 +37,8 @@ export class AppTopBarComponent implements OnInit {
 
   logout() {
     this.authService.logout();
+    this.organizationsService.invalidateCurrentOrganization();
+    this.usersService.invalidateCurrentUser();
     this.router.navigate(['login']);
   }
 }

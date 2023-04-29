@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { AppComponent } from '../app.component';
 import { map } from 'rxjs/operators';
 import { PasswordMatchValidator } from '../shared/helpers';
+import { UsersService } from '../services/users.service';
 
 @Component({
   selector: 'app-login',
@@ -24,7 +25,7 @@ export class LoginComponent implements OnInit {
     'password2': new FormControl('', [])
   });
 
-  constructor(public router: Router, private authService: AuthenticationService) {
+  constructor(public router: Router, private authService: AuthenticationService, private usersService: UsersService) {
     if (this.router.url.indexOf('register') !== -1) {
       this.isLogin = false;
     }
@@ -56,7 +57,8 @@ export class LoginComponent implements OnInit {
     }
     AppComponent.toggleProgressBar();
     const {email, password1, password2} = this.registerForm.value;
-    this.authService.register(email, password1).subscribe((e: any) => {
+    this.authService.register(email, password1).subscribe(async (e: any) => {
+      await this.usersService.registerUser(e.user.uid, email);
       this.router.navigate(['/settings']);
     });
   }

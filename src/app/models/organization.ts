@@ -1,8 +1,12 @@
+import { Invitation } from './invitation';
+
 export interface Organization {
   key: string;
   name: string;
   myRole?: string;
   isDefault?: boolean;
   users: any[];
-  invites: any[];
+  invitations: Invitation[];
+  holidays?: any;
+  sheetId?: string;
 }

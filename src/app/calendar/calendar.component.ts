@@ -5,6 +5,9 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { Router } from '@angular/router';
 import { EventsService } from '../services/events.service';
 import { Event } from '../models/event';
+import { handleHolidays } from '../shared/helpers';
+import { OrganizationsService } from '../services/organizations.service';
+import { Organization } from '../models/organization';
 
 @Component({
   selector: 'app-calendar',
@@ -21,13 +24,18 @@ export class CalendarComponent implements OnInit{
     selectable: true,
     select: this.handleDateClick.bind(this),
     eventClick: this.handleEventClick.bind(this),
+    firstDay: 1,
+    datesSet: async () => {
+      const organization: Organization = await this.organizationsService.getCurrentOrganization();
+      handleHolidays(organization.holidays);
+    }
   };
 
-  constructor(private router: Router, private eventsService: EventsService) {}
+  constructor(private router: Router, private eventsService: EventsService,
+              private organizationsService: OrganizationsService) {}
 
   async ngOnInit() {
     this.events = await this.eventsService.listEvents();
-    console.log(this.events)
   }
 
   handleDateClick(arg: any) {

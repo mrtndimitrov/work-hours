@@ -5,4 +5,5 @@ export interface Event {
   hours: number;
   workDone: string;
   reason: string;
+  holiday?: boolean;
 }

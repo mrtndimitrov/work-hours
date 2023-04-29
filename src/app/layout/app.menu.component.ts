@@ -30,22 +30,27 @@ export class AppMenuComponent implements OnInit {
           {label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/']}
         ]
       },
-      {
+    ];
+    if (organization) {
+      this.model.push({
         label: 'Извънредни часове',
         items: [
-          {label: 'Calendar', icon: 'pi pi-fw pi-calendar', routerLink: ['/calendar']},
-          {label: 'Enter new', icon: 'pi pi-fw pi-check-square', routerLink: ['/new-event']},
-        ]
-      },
-    ];
-    if (organization && organization.myRole === 'admin') {
-      this.model.push({
-        label: 'Потребители',
-        items: [
-          {label: 'Активни', icon: 'pi pi-users', routerLink: ['/users']},
-          {label: 'Поканени', icon: 'pi pi-user-plus', routerLink: ['/invites']},
+          {label: 'Календар', icon: 'pi pi-fw pi-calendar', routerLink: ['/calendar']},
+          {label: 'Въведи нов', icon: 'pi pi-fw pi-check-square', routerLink: ['/new-event']},
+          {label: ' Отчет', icon: 'pi pi-fw pi-table', routerLink: ['/user-report']},
         ]
       });
+      if (organization.myRole === 'admin') {
+        this.model.push({
+          label: 'Организация',
+          items: [
+            {label: 'Потребители', icon: 'pi pi-users', routerLink: ['/users']},
+            {label: 'Поканени', icon: 'pi pi-user-plus', routerLink: ['/invitations']},
+            {label: 'Почивни дни', icon: 'pi pi-calendar-times', routerLink: ['/holidays']},
+            {label: ' Отчет', icon: 'pi pi-fw pi-table', routerLink: ['/organization-report']},
+          ]
+        });
+      }
     }
   }
 }

@@ -1,0 +1,7 @@
+<p-panel header="Google Sheet за експорт на данните и месечен отчет">
+  <form [formGroup]="googleSheetForm" (ngSubmit)="changeGoogleSheet()">
+    <label for="last-name" class="block text-900 font-medium mb-2">Google Sheet ID</label>
+    <input id="last-name" type="text" placeholder="Google Sheet ID" pInputText class="w-full mb-3" formControlName="sheetId">
+    <button pButton type="submit" label="Въведи"></button>
+  </form>
+</p-panel>

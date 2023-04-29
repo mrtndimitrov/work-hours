@@ -8,6 +8,10 @@ import { LoginComponent } from './login/login.component';
 import { AuthGuard } from './guards/auth.guard';
 import { SettingsComponent } from './settings/settings.component';
 import { UsersComponent } from "./users/users.component";
+import { InvitationsComponent } from './invitations/invitations.component';
+import { HolidaysComponent } from './holidays/holidays.component';
+import { UserReportComponent } from './user-report/user-report.component';
+import { OrganizationReportComponent } from './organization-report/organization-report.component';
 
 const routes: Routes = [
   {
@@ -16,9 +20,12 @@ const routes: Routes = [
       {path: 'settings', component: SettingsComponent},
       {path: 'calendar', component: CalendarComponent},
       {path: 'new-event', component: EventComponent},
+      {path: 'user-report', component: UserReportComponent},
       {path: 'event/:eventId', component: EventComponent},
       {path: 'users', component: UsersComponent},
-      {path: 'invites', component: UsersComponent}]
+      {path: 'invitations', component: InvitationsComponent},
+      {path: 'holidays', component: HolidaysComponent},
+      {path: 'organization-report', component: OrganizationReportComponent}]
   },
   {path: 'login', component: LoginComponent},
   {path: 'register', component: LoginComponent}

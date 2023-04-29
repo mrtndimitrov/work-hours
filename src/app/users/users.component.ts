@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-import {FormControl, FormGroup, Validators} from "@angular/forms";
-import {Router} from "@angular/router";
-import {validateAllFormFields} from "../shared/helpers";
-import {AppComponent} from "../app.component";
-import {UsersService} from "../services/users.service";
-import {MessageService} from "primeng/api";
+import { UsersService } from "../services/users.service";
+import { ConfirmationService, MessageService } from "primeng/api";
+import { OrganizationsService } from '../services/organizations.service';
+import { Organization } from '../models/organization';
+import { User } from '../models/user';
+import { AppComponent } from '../app.component';
 
 @Component({
   selector: 'app-users',
@@ -12,66 +12,50 @@ import {MessageService} from "primeng/api";
   styleUrls: ['./users.component.scss']
 })
 export class UsersComponent {
-  isUsers: boolean = true;
+  users: User[] = [];
+  currentUser: User | null = null;
   roles: any[] = [{name: 'потребител', value: 'user'}, {name: 'администратор', value: 'admin'}];
-  usersForm = new FormGroup({
-    'defaultOrganization': new FormControl('', Validators.required)
-  });
-  newInvitationForm = new FormGroup({
-    'email': new FormControl('', [Validators.required, Validators.email]),
-    'role': new FormControl('', [Validators.required]),
-  });
-  users: any[] = [];
 
-  constructor(private router: Router, private usersService: UsersService, private messageService: MessageService) {
-    if (this.router.url.indexOf('users') !== -1) {
-      this.usersService.getUsers().then((invites: any) => this.users = invites);
-      this.isUsers = true;
-    } else if (this.router.url.indexOf('invites') !== -1) {
-      this.usersService.getInvites().then((invites: any) => this.users = invites);
-      this.isUsers = false;
-    }
+  constructor(private usersService: UsersService, private messageService: MessageService,
+              private organizationsService: OrganizationsService, private confirmationService: ConfirmationService) {
+    this.usersService.getCurrentUser().then((user: User) => {
+      this.currentUser = user;
+      this.organizationsService.getCurrentOrganization().then((organization: Organization) => {
+        this.usersService.getUsers(organization.key).then((users: any) => {
+          this.users = users;
+        });
+      });
+    });
   }
 
-  async delete(user: any, mode: string) {
-    AppComponent.toggleProgressBar();
-    if (mode === 'invite') {
-      await this.usersService.deleteInvite(user.key);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Покана',
-        detail: 'Поканата беше успешно изтрита!',
-        key: 'app-toast'
-      });
-      this.usersService.getInvites(true).then((invites: any) => this.users = invites);
-    }
-    AppComponent.toggleProgressBar();
+  deleteUser(user: any) {
+    this.confirmationService.confirm({
+      header: 'Изтриване на потребител',
+      message: 'Наистина ли искате да изтриете потребителя? Така няма да има достъп до организацията и всички негови събития ще бъдат изтрити.',
+      key: 'app-confirm',
+      accept: async () => {
+        AppComponent.toggleProgressBar();
+        await this.organizationsService.deleteUserFromOrganization(user.organization, user.uid);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Потребител',
+          detail: 'Потребителят беше успешно изтрит!',
+          key: 'app-toast'
+        });
+        AppComponent.toggleProgressBar();
+      }
+    });
   }
 
-  async newInvitation() {
-    if (this.newInvitationForm.invalid) {
-      validateAllFormFields(this.newInvitationForm);
-      return;
-    }
+  async changeRole(user: User) {
     AppComponent.toggleProgressBar();
-    const role: any = this.newInvitationForm.get('role')!.value!;
-    const response = await this.usersService.addInvite(this.newInvitationForm.get('email')!.value!, role.value);
-    if (response.success) {
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Покана',
-        detail: 'Поканата беше успешно изпратена!',
-        key: 'app-toast'
-      });
-      this.usersService.getInvites(true).then((invites: any) => this.users = invites);
-    } else if (response.error === 'invite_exists') {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Покана',
-        detail: 'Вече има покана на посочения имейл!',
-        key: 'app-toast'
-      });
-    }
+    await this.organizationsService.setUserRole(user.uid, user.organization, user.role);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Потребител',
+      detail: 'Ролята на потребителя беше успешно променена!',
+      key: 'app-toast'
+    });
     AppComponent.toggleProgressBar();
   }
 }

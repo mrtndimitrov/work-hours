@@ -1,0 +1,18 @@
+::ng-deep td.fc-day {
+  position: relative;
+}
+
+::ng-deep td.holiday {
+  background-color: lightgray;
+
+  &::after {
+    content: 'Почивен ден';
+    position: absolute;
+    width: 100%;
+    text-align: right;
+    bottom:0;
+    right:0;
+    z-index: 10;
+    font-size: 0.8em;
+  }
+}

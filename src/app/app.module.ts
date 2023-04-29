@@ -17,7 +17,7 @@ import { MenuModule } from 'primeng/menu';
 import { ToastModule } from 'primeng/toast';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ProgressBarModule } from 'primeng/progressbar';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { initializeApp,provideFirebaseApp } from '@angular/fire/app';
 import { environment } from '../environments/environment';
 import { provideAnalytics,getAnalytics,ScreenTrackingService,UserTrackingService } from '@angular/fire/analytics';
@@ -41,6 +41,11 @@ import { RadioButtonModule } from 'primeng/radiobutton';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DropdownModule } from 'primeng/dropdown';
 import { UsersComponent } from './users/users.component';
+import { InvitationsComponent } from './invitations/invitations.component';
+import { HolidaysComponent } from './holidays/holidays.component';
+import { UserReportComponent } from './user-report/user-report.component';
+import { ChartModule } from 'primeng/chart';
+import { OrganizationReportComponent } from './organization-report/organization-report.component';
 
 @NgModule({
   declarations: [
@@ -50,7 +55,11 @@ import { UsersComponent } from './users/users.component';
     EventComponent,
     LoginComponent,
     SettingsComponent,
-    UsersComponent
+    UsersComponent,
+    InvitationsComponent,
+    HolidaysComponent,
+    UserReportComponent,
+    OrganizationReportComponent
   ],
   imports: [
     BrowserModule,
@@ -82,12 +91,14 @@ import { UsersComponent } from './users/users.component';
     RippleModule,
     RadioButtonModule,
     ConfirmDialogModule,
-    DropdownModule
+    DropdownModule,
+    FormsModule,
+    ChartModule
   ],
   providers: [
     ScreenTrackingService,
     UserTrackingService,
-    { provide: FIREBASE_OPTIONS, useValue: environment.firebase },
+    {provide: FIREBASE_OPTIONS, useValue: environment.firebase},
     MessageService,
     AuthGuard,
     ConfirmationService
