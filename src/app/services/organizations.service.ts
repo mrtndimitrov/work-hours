@@ -191,20 +191,21 @@ export class OrganizationsService {
   async setSheetId(sheetId: string) {
     const db = getDatabase();
     const currentOrganization: Organization = await this.getCurrentOrganization();
-    currentOrganization.sheetId = sheetId;
-    await set(ref(db, `organizations/${currentOrganization.key}/sheetId`), sheetId);
     const functions = getFunctions(getApp());
     if (!environment.production) {
       connectFunctionsEmulator(functions, 'localhost', 5001);
     }
     const authorizeSheet = httpsCallable(functions, 'authorizeSheet');
     return authorizeSheet({
-      organization: currentOrganization.key
-    }).then((result) => {
+      organization: currentOrganization.key,
+      sheetId: sheetId
+    }).then(async (result) => {
+      currentOrganization.sheetId = sheetId;
+      await set(ref(db, `organizations/${currentOrganization.key}/sheetId`), sheetId);
       return result.data;
     })
-      .catch((error) => {
-        return {error};
-      });
+    .catch((error) => {
+      return {error};
+    });
   }
 }

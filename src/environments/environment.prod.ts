@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
+  serviceEmail: 'google-sheets-updater@workhours-2b75b.iam.gserviceaccount.com',
   firebase: {
     projectId: 'workhours-2b75b',
     appId: '1:491679694101:web:f4f35486e2f77b0627fd1c',
