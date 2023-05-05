@@ -17,11 +17,14 @@ export class EventsService {
   constructor(private db: AngularFireDatabase, private organizationsService: OrganizationsService,
               private usersService: UsersService) {}
 
-  async listEvents() {
+  async listEvents(uid: string | null = null) {
     const dbRef = ref(getDatabase());
     const organization: Organization = await this.organizationsService.getCurrentOrganization();
-    const user: User = await this.usersService.getCurrentUser();
-    const snapshot = await get(child(dbRef, `events/${organization.key}/${user.uid}`));
+    if (!uid) {
+      const user: User = await this.usersService.getCurrentUser();
+      uid = user.uid;
+    }
+    const snapshot = await get(child(dbRef, `events/${organization.key}/${uid}`));
     if (snapshot.exists()) {
       const events: Array<Event> = [];
       for (const item of Object.entries(snapshot.val())) {
@@ -50,7 +53,7 @@ export class EventsService {
     const newEventKey = push(child(ref(db), `events/${organization.key}/${user.uid}`)).key;
     const updates: any = {};
     updates[`events/${organization.key}/${user.uid}/${newEventKey}`] = {
-      date: `${year}-${month}-${day}`,
+      date: `${year}-${month > 9 ? month : `0${month}`}-${day > 9 ? day : `0${day}`}`,
       hours: event.hours,
       workDone: event.workDone,
       reason: event.reason
@@ -69,7 +72,7 @@ export class EventsService {
     const db = getDatabase();
     const updates: any = {};
     updates[`events/${organization.key}/${user.uid}/${event.id}`] = {
-      date: `${year}-${month}-${day}`,
+      date: `${year}-${month > 9 ? month : `0${month}`}-${day > 9 ? day : `0${day}`}`,
       hours: event.hours,
       workDone: event.workDone,
       reason: event.reason
@@ -110,7 +113,7 @@ export class EventsService {
 
   async getEventsPerMonths(uid: string) {
     const organization: Organization = await this.organizationsService.getCurrentOrganization();
-    const events: Event[] = await this.listEvents();
+    const events: Event[] = await this.listEvents(uid);
     const months: any = {};
     for (const event of events) {
       const key = `${event.date.getUTCFullYear()}-${event.date.getUTCMonth() > 8 ?
@@ -173,15 +176,19 @@ export class EventsService {
     );
   }
 
-  async reportEvents() {
+  async reportEvents(date: string) {
     const organization: Organization = await this.organizationsService.getCurrentOrganization();
     const functions = getFunctions(getApp());
+    let production = true;
     if (!environment.production) {
+      production = false;
       connectFunctionsEmulator(functions, 'localhost', 5001);
     }
-    const reportEvents = httpsCallable(functions, 'reportEvents');
-    return reportEvents({
-      organization: organization.key
+    const scheduleEventsReport = httpsCallable(functions, 'scheduleEventsReport');
+    return scheduleEventsReport({
+      organization: organization.key,
+      date: date,
+      prod: production
     }).then((result) => {
       return result.data;
     })

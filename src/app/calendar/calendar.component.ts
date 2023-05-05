@@ -25,6 +25,7 @@ export class CalendarComponent implements OnInit{
     select: this.handleDateClick.bind(this),
     eventClick: this.handleEventClick.bind(this),
     firstDay: 1,
+    displayEventTime : false,
     datesSet: async () => {
       const organization: Organization = await this.organizationsService.getCurrentOrganization();
       handleHolidays(organization.holidays);

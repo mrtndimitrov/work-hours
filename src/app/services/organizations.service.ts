@@ -84,6 +84,8 @@ export class OrganizationsService {
         {user: user!.uid, organization: organization.key, role: 'admin', default: false});
       await this.setDefaultOrganization(organization.key);
       this.onMyOrganizationsChange.emit();
+      organization.myRole = 'admin';
+      this.onOrganizationChange.emit(organization);
 
       this.messageService.add({
         severity: 'success',
@@ -174,6 +176,10 @@ export class OrganizationsService {
       {user: user!.uid, organization: organizationKey, role: role, default: false});
     await this.setDefaultOrganization(organizationKey);
     this.onMyOrganizationsChange.emit();
+    if (!this.currentOrganization) {
+      this.currentOrganization = await this.getOrganization(organizationKey);
+      this.onOrganizationChange.emit(this.currentOrganization!);
+    }
   }
 
   async setUserRole(uid: string, organizationKey: string, role: string) {
@@ -188,7 +194,7 @@ export class OrganizationsService {
     await set(ref(db, `organizations/${currentOrganization.key}/holidays`), JSON.stringify(holidays));
   }
 
-  async setSheetId(sheetId: string) {
+  async setSpreadsheetId(spreadsheetId: string) {
     const db = getDatabase();
     const currentOrganization: Organization = await this.getCurrentOrganization();
     const functions = getFunctions(getApp());
@@ -198,10 +204,10 @@ export class OrganizationsService {
     const authorizeSheet = httpsCallable(functions, 'authorizeSheet');
     return authorizeSheet({
       organization: currentOrganization.key,
-      sheetId: sheetId
+      spreadsheetId: spreadsheetId
     }).then(async (result) => {
-      currentOrganization.sheetId = sheetId;
-      await set(ref(db, `organizations/${currentOrganization.key}/sheetId`), sheetId);
+      currentOrganization.spreadsheetId = spreadsheetId;
+      await set(ref(db, `organizations/${currentOrganization.key}/spreadsheetId`), spreadsheetId);
       return result.data;
     })
     .catch((error) => {

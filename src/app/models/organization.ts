@@ -8,5 +8,5 @@ export interface Organization {
   users: any[];
   invitations: Invitation[];
   holidays?: any;
-  sheetId?: string;
+  spreadsheetId?: string;
 }

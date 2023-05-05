@@ -1,7 +1,44 @@
 <p-panel header="Google Sheet за експорт на данните и месечен отчет">
-  <form [formGroup]="googleSheetForm" (ngSubmit)="changeGoogleSheet()">
+  <form [formGroup]="googleSpreadsheetForm" (ngSubmit)="changeGoogleSheet()">
     <label for="last-name" class="block text-900 font-medium mb-2">Google Sheet ID</label>
-    <input id="last-name" type="text" placeholder="Google Sheet ID" pInputText class="w-full mb-3" formControlName="sheetId">
+    <input id="last-name" type="text" placeholder="Google Sheet ID" pInputText class="w-full mb-3" formControlName="spreadsheetId">
     <button pButton type="submit" label="Въведи"></button>
   </form>
 </p-panel>
+<p-panel header="Въведени извънредни часове по месеци">
+  <p-dropdown [options]="months" optionLabel="value" optionValue="key" [(ngModel)]="selectedMonth"></p-dropdown>
+  <button pButton type="button" (click)="createReport()" [disabled]="!googleSpreadsheetForm.get('spreadsheetId')?.value" label="Отчет за избрания месец в Google Sheet"></button>
+  <ng-container *ngIf="selectedMonth">
+    <p-panel *ngFor="let userGroupedEvents of usersGroupedEvents"
+             header="{{userGroupedEvents.user.firstName ? userGroupedEvents.user.firstName + ' ' + userGroupedEvents.user.lastName : userGroupedEvents.user.email}}">
+      <p-table *ngIf="userGroupedEvents.grouped_events[selectedMonth]" [value]="userGroupedEvents.grouped_events[selectedMonth].events" [tableStyle]="{ 'min-width': '50rem' }">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Дата</th>
+            <th>Почивен ден</th>
+            <th>Брой часове</th>
+            <th>Извършена работа</th>
+            <th>Причина за извънредния труд</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-event>
+          <tr>
+            <td>{{ event.date | date: 'dd.MM.yyyy' }}</td>
+            <td>{{ event.hours }}</td>
+            <td>{{ event.holiday ? 'Да' : 'Не' }}</td>
+            <td>{{ event.workDone }}</td>
+            <td>{{ event.reason }}</td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="summary">
+          <div class="flex align-items-center justify-content-between">
+            Общо брой часове: {{ userGroupedEvents.grouped_events[selectedMonth].workday_hours }} часа в работни дни;
+            {{ userGroupedEvents.grouped_events[selectedMonth].holiday_hours }} часа в почивни дни
+          </div>
+        </ng-template>
+      </p-table>
+      <b *ngIf="!userGroupedEvents.grouped_events[selectedMonth]">Няма извънредни часове за този месец</b>
+    </p-panel>
+  </ng-container>
+</p-panel>
+

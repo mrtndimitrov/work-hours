@@ -145,18 +145,15 @@ export class SettingsComponent implements OnInit{
     AppComponent.toggleProgressBar();
     await this.organizationsService.addUserToOrganization(invitation.organization, invitation.role);
     this.organizations = await this.organizationsService.listMyOrganizations();
-    if (this.organizations.length === 1) {
-      await this.organizationsService.setDefaultOrganization(invitation.organization);
-      this.organizationsForm.get('defaultOrganization')?.setValue(invitation.organization);
-      await this.invitationsService.deleteInvitation(invitation.key);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Покана',
-        detail: 'Поканата беше успешно приета!',
-        key: 'app-toast'
-      });
-      await this.getInvitations();
-    }
+    this.organizationsForm.get('defaultOrganization')?.setValue(invitation.organization);
+    await this.invitationsService.deleteInvitation(invitation.key);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Покана',
+      detail: 'Поканата беше успешно приета!',
+      key: 'app-toast'
+    });
+    await this.getInvitations();
     AppComponent.toggleProgressBar();
   }
 

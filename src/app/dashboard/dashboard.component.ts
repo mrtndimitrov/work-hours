@@ -22,11 +22,17 @@ export class DashboardComponent implements OnInit {
     const surfaceBorder = documentStyle.getPropertyValue('--surface-border');
 
     const user: User = await this.usersService.getCurrentUser();
-    const data: any = await this.eventsService.getEventsPerMonths(user.uid);
+    let data: any = await this.eventsService.getEventsPerMonths(user.uid);
     if (!data) {
       return;
     }
-    console.log(Object.entries(data))
+    data = Object.keys(data).sort().reduce(
+      (obj: any, key) => {
+        obj[key] = data[key];
+        return obj;
+      },
+      {}
+    );
     const months: string[] = [];
     const holidayHours: number[] = [];
     const workingDayHours: number[] = [];
