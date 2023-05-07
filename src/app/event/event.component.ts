@@ -93,6 +93,7 @@ export class EventComponent {
       this.messageService.add({severity:'success', summary:'Създаване', detail:'Успешно добавено събитие!', key: 'app-toast'});
     }
     this.toggleEditMode();
+    AppComponent.toggleProgressBar();
   }
 
   getTitle(): string {

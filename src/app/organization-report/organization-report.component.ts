@@ -60,7 +60,6 @@ export class OrganizationReportComponent implements OnInit {
       validateAllFormFields(this.googleSpreadsheetForm);
       return;
     }
-    AppComponent.toggleProgressBar();
     const { spreadsheetId } = this.googleSpreadsheetForm.value;
     this.confirmationService.confirm({
       header: 'Промяна на Google Sheet Id',

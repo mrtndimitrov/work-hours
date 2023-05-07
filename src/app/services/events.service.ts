@@ -20,6 +20,9 @@ export class EventsService {
   async listEvents(uid: string | null = null) {
     const dbRef = ref(getDatabase());
     const organization: Organization = await this.organizationsService.getCurrentOrganization();
+    if (!organization) {
+      return [];
+    }
     if (!uid) {
       const user: User = await this.usersService.getCurrentUser();
       uid = user.uid;

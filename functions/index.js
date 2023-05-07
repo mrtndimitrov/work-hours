@@ -90,7 +90,7 @@ exports.exportEventToExcel =
       }
       return {success: true};
     } catch (e) {
-      functions.logger.error(`Error in DB trigger: ${JSON.stringify(e)}`, {structuredData: true});
+      functions.logger.error(`Error in DB trigger: ${e.message}`, {structuredData: true});
       return {error: e};
     }
   });
@@ -311,6 +311,7 @@ async function doReport(organizationKey, date) {
   // do we have a sheet with the name of the organization?
   try {
     const reportSheetName = `Отчет за ${organization.name}`;
+    const dateString = monthYearToText(date);
     const sheets = google.sheets({version: 'v4', auth: jwtClient});
     // now check if a sheet exists for this specified user
     const spreadsheet = await getSpreadsheet(sheets, organization.spreadsheetId);
@@ -327,9 +328,29 @@ async function doReport(organizationKey, date) {
     } else {
       await clearSheet(sheets, organization.spreadsheetId, reportSheetId, reportSheetName);
     }
-    await writeHeader(sheets, reportSheetId, organization, reportSheetName);
+    await writeHeader(sheets, reportSheetId, organization, reportSheetName, dateString);
+    // let's find out now all the users that have events in the specified month
+    const snapshot = await admin.database().ref('users_organizations').orderByChild('organization').equalTo(organizationKey).once('value');
+    if (!snapshot.exists()) {
+      functions.logger.error(`Error in doReport: organization ${organizationKey} without users`, {structuredData: true});
+      return '';
+    }
+    let userOrganizations = snapshot.val();
+    if (!Array.isArray(userOrganizations)) {
+      userOrganizations = [userOrganizations];
+    }
+    for (const userOrganization of userOrganizations) {
+      console.log(userOrganization)
+      // get the user
+      const userSnapshot = await admin.database().ref(`users/${userOrganization.user}`).once('value');
+      const user = userSnapshot.val();
+      console.log(user)
+      const eventsSnapshot = await admin.database().ref(`events/${organizationKey}/${userOrganization.user}`)
+        .orderByChild('date').startAt(date).once('value');
+      console.log(eventsSnapshot.val());
+    }
   } catch (e) {
-    functions.logger.error(`Error in doReport: ${JSON.stringify(e)}`, {structuredData: true});
+    functions.logger.error(`Error in doReport: ${e.message}`, {structuredData: true});
     return {error: e};
   }
   return {success: true};
@@ -363,8 +384,26 @@ async function clearSheet(sheets, spreadsheetId, sheetId, sheetName) {
   });
 }
 
-async function writeHeader(sheets, sheetId, organization, sheetName) {
+async function writeHeader(sheets, sheetId, organization, sheetName, dateString) {
   const requests = [];
+  requests.push({
+    "repeatCell": {
+      "range": {
+        "sheetId": sheetId
+      },
+      "cell": {
+        "userEnteredFormat": {
+          "wrapStrategy": "WRAP",
+          "horizontalAlignment": "CENTER",
+          "verticalAlignment": "MIDDLE",
+          "textFormat": {
+            "fontSize": 14
+          }
+        }
+      },
+      "fields": "userEnteredFormat(wrapStrategy,horizontalAlignment,verticalAlignment,textFormat)"
+    }
+  });
   requests.push({
     "repeatCell": {
       "range": {
@@ -381,8 +420,6 @@ async function writeHeader(sheets, sheetId, organization, sheetName) {
             "green": 83/255,
             "blue": 148/255
           },
-          "horizontalAlignment": "CENTER",
-          "verticalAlignment": "MIDDLE",
           "textFormat": {
             "foregroundColor": {
               "red": 255/255,
@@ -394,7 +431,7 @@ async function writeHeader(sheets, sheetId, organization, sheetName) {
           }
         }
       },
-      "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment)"
+      "fields": "userEnteredFormat(backgroundColor,textFormat)"
     }
   });
   requests.push({
@@ -429,7 +466,7 @@ async function writeHeader(sheets, sheetId, organization, sheetName) {
         "endIndex": 1
       },
       "properties": {
-        "pixelSize": 60
+        "pixelSize": 55
       },
       "fields": "pixelSize"
     }
@@ -554,13 +591,54 @@ async function writeHeader(sheets, sheetId, organization, sheetName) {
       "mergeType": "MERGE_ALL"
     }
   });
+  requests.push({
+    "repeatCell": {
+      "range": {
+        "sheetId": sheetId,
+        "startRowIndex": 1,
+        "endRowIndex": 3,
+        "startColumnIndex": 0,
+        "endColumnIndex": 10
+      },
+      "cell": {
+        "userEnteredFormat": {
+          "textFormat": {
+            "fontSize": 14,
+            "bold": true
+          }
+        }
+      },
+      "fields": "userEnteredFormat(textFormat)"
+    }
+  });
   const batchUpdateRequest = {requests};
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId: organization.spreadsheetId,
     resource: batchUpdateRequest,
   });
-  await updateInRange(sheets, organization.spreadsheetId, [[`Извънреден труд на ${organization.name}`]], `${sheetName}!A1`);
+  await updateInRange(sheets, organization.spreadsheetId, [[`Извънреден труд на ${organization.name} за ${dateString}`]], `${sheetName}!A1`);
   await updateInRange(sheets, organization.spreadsheetId,
     [['', 'Име, фамилия', "В работни дни\n(часове и дата)", '', "В почивни дни\n(часове и дата)", '',
       'Причина, наложила извънреден труд', 'Извършена работа', 'Работа в минути', '']], `${sheetName}!A2`);
+  await updateInRange(sheets, organization.spreadsheetId,
+    [['№', '', 'ЧАСОВЕ', 'ДАТА', 'ЧАСОВЕ', 'ДАТА', '', '', 'Работни дни', 'Почивни дни']], `${sheetName}!A3`);
+}
+
+function monthYearToText(monthKey) {
+  const [year, month] = monthKey.split('-');
+  switch (month) {
+    case '01': return `Януари, ${year} г.`;
+    case '02': return `Февруари, ${year} г.`;
+    case '03': return `Март, ${year} г.`;
+    case '04': return `Април, ${year} г.`;
+    case '05': return `Май, ${year} г.`;
+    case '06': return `Юни, ${year} г.`;
+    case '07': return `Юли, ${year} г.`;
+    case '08': return `Август, ${year} г.`;
+    case '09': return `Септември, ${year} г.`;
+    case '10': return `Октомври, ${year} г.`;
+    case '11': return `Ноември, ${year} г.`;
+    case '12': return `Декември, ${year} г.`;
+    default: return `${year} г.`;
+  }
 }
