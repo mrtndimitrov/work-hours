@@ -301,6 +301,17 @@ async function deleteRow(sheets, spreadsheetId, sheetId, row) {
 //////////////////////////////////////////
 // reporting functions
 async function doReport(organizationKey, date) {
+  let nextDate;
+  let [year, month] = date.split('-');
+  year = parseInt(year, 10);
+  month = parseInt(month, 10);
+  if (month === 12) {
+    nextDate = `${year + 1}-01`;
+  } else if (month > 8) {
+    nextDate = `${year}-${month + 1}`;
+  } else {
+    nextDate = `${year}-0${month + 1}`;
+  }
   // check if sheet id is associated with the organization
   const jwtClient = await getJwtClient();
   const organizationSnapshot = await admin.database().ref(`organizations/${organizationKey}`).once('value');
@@ -329,24 +340,27 @@ async function doReport(organizationKey, date) {
       await clearSheet(sheets, organization.spreadsheetId, reportSheetId, reportSheetName);
     }
     await writeHeader(sheets, reportSheetId, organization, reportSheetName, dateString);
+    let writtenRows = 3;
     // let's find out now all the users that have events in the specified month
     const snapshot = await admin.database().ref('users_organizations').orderByChild('organization').equalTo(organizationKey).once('value');
     if (!snapshot.exists()) {
       functions.logger.error(`Error in doReport: organization ${organizationKey} without users`, {structuredData: true});
-      return '';
+      return {error: 'no user_organization'};
     }
-    let userOrganizations = snapshot.val();
-    if (!Array.isArray(userOrganizations)) {
-      userOrganizations = [userOrganizations];
-    }
-    for (const userOrganization of userOrganizations) {
-      console.log(userOrganization)
+    for (const [_key, userOrganization] of Object.entries(snapshot.val())) {
       // get the user
       const userSnapshot = await admin.database().ref(`users/${userOrganization.user}`).once('value');
-      const user = userSnapshot.val();
-      console.log(user)
+      if (!userSnapshot.exists()) {
+        functions.logger.error(`Error in doReport: user ${userOrganization.user} missing`, {structuredData: true});
+        return {error: 'no user'};
+      }
       const eventsSnapshot = await admin.database().ref(`events/${organizationKey}/${userOrganization.user}`)
-        .orderByChild('date').startAt(date).once('value');
+        .orderByChild('date').startAt(date).endAt(nextDate).once('value');
+      if (!userSnapshot.exists()) {
+        continue;
+      }
+      const user = userSnapshot.val();
+      await writeUserHeader(sheets, reportSheetId, organization, reportSheetName, dateString, user, writtenRows);
       console.log(eventsSnapshot.val());
     }
   } catch (e) {
@@ -397,7 +411,8 @@ async function writeHeader(sheets, sheetId, organization, sheetName, dateString)
           "horizontalAlignment": "CENTER",
           "verticalAlignment": "MIDDLE",
           "textFormat": {
-            "fontSize": 14
+            "fontSize": 14,
+            "fontFamily": "Arial",
           }
         }
       },
@@ -622,6 +637,72 @@ async function writeHeader(sheets, sheetId, organization, sheetName, dateString)
       'Причина, наложила извънреден труд', 'Извършена работа', 'Работа в минути', '']], `${sheetName}!A2`);
   await updateInRange(sheets, organization.spreadsheetId,
     [['№', '', 'ЧАСОВЕ', 'ДАТА', 'ЧАСОВЕ', 'ДАТА', '', '', 'Работни дни', 'Почивни дни']], `${sheetName}!A3`);
+}
+
+async function writeUserHeader(sheets, sheetId, organization, sheetName, dateString, user, row){
+  const requests = [];
+  requests.push({
+    "repeatCell": {
+      "range": {
+        "sheetId": sheetId,
+        "startRowIndex": row,
+        "endRowIndex": row + 1,
+        "startColumnIndex": 0,
+        "endColumnIndex": 10
+      },
+      "cell": {
+        "userEnteredFormat": {
+          "backgroundColor": {
+            "red": 239/255,
+            "green": 239/255,
+            "blue": 239/255
+          },
+          "textFormat": {
+            "fontFamily": "Comfortaa",
+            "fontSize": 14,
+            "bold": true
+          }
+        }
+      },
+      "fields": "userEnteredFormat(backgroundColor,textFormat)"
+    }
+  });
+  requests.push({
+    "mergeCells": {
+      "range": {
+        "sheetId": sheetId,
+        "startRowIndex": row,
+        "endRowIndex": row + 1,
+        "startColumnIndex": 0,
+        "endColumnIndex": 10
+      },
+      "mergeType": "MERGE_ALL"
+    }
+  });
+  requests.push({
+    "updateDimensionProperties": {
+      "range": {
+        "sheetId": sheetId,
+        "dimension": "ROWS",
+        "startIndex": row,
+        "endIndex": row + 1
+      },
+      "properties": {
+        "pixelSize": 45
+      },
+      "fields": "pixelSize"
+    }
+  });
+  const batchUpdateRequest = {requests};
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: organization.spreadsheetId,
+    resource: batchUpdateRequest,
+  });
+  let name = user.email;
+  if (user.firstName) {
+    name = `${user.firstName} ${user.lastName}`.toUpperCase();
+  }
+  await updateInRange(sheets, organization.spreadsheetId, [[name]], `${sheetName}!A${row + 1}`);
 }
 
 function monthYearToText(monthKey) {
