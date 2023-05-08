@@ -14,6 +14,7 @@ import { UsersService } from './users.service';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from '@angular/fire/functions';
 import { getApp } from '@angular/fire/app';
 import { environment } from '../../environments/environment';
+import {handleHolidays} from "../shared/helpers";
 
 @Injectable({
   providedIn: 'root'
@@ -40,7 +41,7 @@ export class OrganizationsService {
         const organization: Organization = await this.getOrganization(item.organization);
         organization.myRole = item.role;
         organization.isDefault = item.default;
-        organization.holidays = organization.holidays ? JSON.parse(organization.holidays) : {includes: [], excludes: []};
+        this.handleHolidays(organization);
         organization.invitations = [];
         organization.users = [];
         organizations.push(organization);
@@ -60,6 +61,20 @@ export class OrganizationsService {
     const dbRef = ref(getDatabase());
     const snapshot = await get(child(dbRef, `organizations/${key}`));
     return {key, ...snapshot.val()};
+  }
+
+  private handleHolidays(organization: Organization) {
+    organization.holidays = organization.holidays ? JSON.parse(organization.holidays) : {includes: [], excludes: []};
+    const includes = [];
+    for (const includeStr of organization.holidays.includes) {
+      includes.push(new Date(includeStr));
+    }
+    organization.holidays.parsed_includes = includes;
+    const excludes = [];
+    for (const excludeStr of organization.holidays.excludes) {
+      excludes.push(new Date(excludeStr));
+    }
+    organization.holidays.parsed_excludes = excludes;
   }
 
   async addOrganization(organization: Organization) {
@@ -190,8 +205,10 @@ export class OrganizationsService {
   async setHolidays(holidays: any) {
     const db = getDatabase();
     const currentOrganization: Organization = await this.getCurrentOrganization();
+    holidays = JSON.stringify(holidays);
     currentOrganization.holidays = holidays;
-    await set(ref(db, `organizations/${currentOrganization.key}/holidays`), JSON.stringify(holidays));
+    this.handleHolidays(currentOrganization);
+    await set(ref(db, `organizations/${currentOrganization.key}/holidays`), holidays);
   }
 
   async setSpreadsheetId(spreadsheetId: string) {

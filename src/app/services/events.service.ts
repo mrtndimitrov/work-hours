@@ -128,8 +128,7 @@ export class EventsService {
       if (event.date.getDay() === 0 || event.date.getDay() === 6) {
         // ok. it is weekend but is it excluded?
         let excluded = false;
-        for (const stringDate of organization.holidays.excludes) {
-          const excludedDate = new Date(stringDate);
+        for (const excludedDate of organization.holidays.parsed_excludes) {
           if (excludedDate.getUTCFullYear() === event.date.getUTCFullYear() &&
               excludedDate.getUTCMonth() === event.date.getUTCMonth() &&
               excludedDate.getUTCDate() === event.date.getUTCDate()) {
@@ -149,8 +148,7 @@ export class EventsService {
       } else {
         // ok. it is a working day. check if it is not included in holidays
         let included = false;
-        for (const stringDate of organization.holidays.includes) {
-          const includedDate = new Date(stringDate);
+        for (const includedDate of organization.holidays.parsed_includes) {
           if (includedDate.getUTCFullYear() === event.date.getUTCFullYear() &&
             includedDate.getUTCMonth() === event.date.getUTCMonth() &&
             includedDate.getUTCDate() === event.date.getUTCDate()) {
@@ -169,6 +167,12 @@ export class EventsService {
         }
       }
       months[key].events.push(event);
+    }
+    for (const month of Object.values(months)) {
+      // @ts-ignore
+      month.events.sort((a: Event, b: Event) => {
+        return a.date.getTime() - b.date.getTime();
+      });
     }
     return Object.keys(months).sort().reverse().reduce(
       (obj: any, key) => {

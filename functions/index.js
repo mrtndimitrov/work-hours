@@ -315,10 +315,27 @@ async function doReport(organizationKey, date) {
   // check if sheet id is associated with the organization
   const jwtClient = await getJwtClient();
   const organizationSnapshot = await admin.database().ref(`organizations/${organizationKey}`).once('value');
+  if (!organizationSnapshot.exists()) {
+    functions.logger.error(`Error in doReport: organization ${organizationKey} does not exist`, {structuredData: true});
+    return {error: 'no organization'};
+  }
   const organization = organizationSnapshot.val();
   if (!organization.spreadsheetId) {
-    return;
+    functions.logger.error(`Error in doReport: organization ${organizationKey} has no spreadsheetId`, {structuredData: true});
+    return {error: 'no spreadsheet id'};
   }
+  // let's first build information about the holidays in the organization
+  organization.holidays = organization.holidays ? JSON.parse(organization.holidays) : {includes: [], excludes: []};
+  const includes = [];
+  for (const includeStr of organization.holidays.includes) {
+    includes.push(new Date(includeStr));
+  }
+  organization.holidays.includes = includes;
+  const excludes = [];
+  for (const excludeStr of organization.holidays.excludes) {
+    excludes.push(new Date(excludeStr));
+  }
+  organization.holidays.excludes = excludes;
   // do we have a sheet with the name of the organization?
   try {
     const reportSheetName = `Отчет за ${organization.name}`;
@@ -356,12 +373,50 @@ async function doReport(organizationKey, date) {
       }
       const eventsSnapshot = await admin.database().ref(`events/${organizationKey}/${userOrganization.user}`)
         .orderByChild('date').startAt(date).endAt(nextDate).once('value');
-      if (!userSnapshot.exists()) {
+      if (!eventsSnapshot.exists()) {
         continue;
       }
       const user = userSnapshot.val();
-      await writeUserHeader(sheets, reportSheetId, organization, reportSheetName, dateString, user, writtenRows);
-      console.log(eventsSnapshot.val());
+      let userName = user.email;
+      if (user.firstName) {
+        userName = `${user.firstName} ${user.lastName}`;
+      }
+      await writeUserHeader(sheets, reportSheetId, organization, reportSheetName, dateString, userName.toUpperCase()                    , writtenRows);
+      writtenRows += 2;
+      // our first job is to group the events on a day meaning max one event per day
+      let events = {};
+      let totalHoursHolidays = 0;
+      let totalHoursWorkingDays = 0;
+      for (const [_key, event] of Object.entries(eventsSnapshot.val())) {
+        if (!events[event.date]) {
+          events[event.date] = {
+            date: new Date(event.date),
+            hours: 0,
+            reason: [],
+            workDone: []
+          }
+          events[event.date].isHoliday = isHoliday(organization, events[event.date]);
+        }
+        events[event.date].hours += event.hours;
+        events[event.date].reason.push(event.reason);
+        events[event.date].workDone.push(event.workDone);
+        if (events[event.date].isHoliday) {
+          totalHoursHolidays += event.hours;
+        } else {
+          totalHoursWorkingDays += event.hours;
+        }
+      }
+      events = Object.keys(events).sort().reduce(
+        (obj, key) => {
+          obj[key] = events[key];
+          return obj;
+        },
+        {}
+      );
+      let i = 1;
+      for (const event of Object.values(events)) {
+        await writeEvent(sheets, organization, reportSheetId, reportSheetName, userName, event, writtenRows++, i++);
+      }
     }
   } catch (e) {
     functions.logger.error(`Error in doReport: ${e.message}`, {structuredData: true});
@@ -441,6 +496,7 @@ async function writeHeader(sheets, sheetId, organization, sheetName, dateString)
               "green": 255/255,
               "blue": 255/255
             },
+            "fontFamily": "Arial",
             "fontSize": 14,
             "bold": true
           }
@@ -618,6 +674,7 @@ async function writeHeader(sheets, sheetId, organization, sheetName, dateString)
       "cell": {
         "userEnteredFormat": {
           "textFormat": {
+            "fontFamily": "Arial",
             "fontSize": 14,
             "bold": true
           }
@@ -639,7 +696,7 @@ async function writeHeader(sheets, sheetId, organization, sheetName, dateString)
     [['№', '', 'ЧАСОВЕ', 'ДАТА', 'ЧАСОВЕ', 'ДАТА', '', '', 'Работни дни', 'Почивни дни']], `${sheetName}!A3`);
 }
 
-async function writeUserHeader(sheets, sheetId, organization, sheetName, dateString, user, row){
+async function writeUserHeader(sheets, sheetId, organization, sheetName, dateString, userName, row){
   const requests = [];
   requests.push({
     "repeatCell": {
@@ -693,16 +750,108 @@ async function writeUserHeader(sheets, sheetId, organization, sheetName, dateStr
       "fields": "pixelSize"
     }
   });
+  requests.push({
+    "repeatCell": {
+      "range": {
+        "sheetId": sheetId,
+        "startRowIndex": row + 1,
+        "endRowIndex": row + 2,
+        "startColumnIndex": 0,
+        "endColumnIndex": 10
+      },
+      "cell": {
+        "userEnteredFormat": {
+          "backgroundColor": {
+            "red": 207/255,
+            "green": 226/255,
+            "blue": 243/255
+          },
+          "textFormat": {
+            "fontFamily": "Arial",
+            "fontSize": 14,
+            "bold": true,
+            "foregroundColor": {
+              "red": 11/255,
+              "green": 83/255,
+              "blue": 148/255
+            },
+          }
+        }
+      },
+      "fields": "userEnteredFormat(backgroundColor,textFormat)"
+    }
+  });
+  requests.push({
+    "mergeCells": {
+      "range": {
+        "sheetId": sheetId,
+        "startRowIndex": row +1,
+        "endRowIndex": row + 2,
+        "startColumnIndex": 0,
+        "endColumnIndex": 10
+      },
+      "mergeType": "MERGE_ALL"
+    }
+  });
   const batchUpdateRequest = {requests};
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId: organization.spreadsheetId,
     resource: batchUpdateRequest,
   });
-  let name = user.email;
-  if (user.firstName) {
-    name = `${user.firstName} ${user.lastName}`.toUpperCase();
+
+  await updateInRange(sheets, organization.spreadsheetId, [[userName]], `${sheetName}!A${row + 1}`);
+  await updateInRange(sheets, organization.spreadsheetId, [[dateString]], `${sheetName}!A${row + 2}`);
+}
+
+async function writeEvent(sheets, organization, sheetId, sheetName, userName, event, row, i) {
+  const requests = [];
+  requests.push({
+    "repeatCell": {
+      "range": {
+        "sheetId": sheetId,
+        "startRowIndex": row,
+        "endRowIndex": row + 1,
+        "startColumnIndex": 0,
+        "endColumnIndex": 10
+      },
+      "cell": {
+        "userEnteredFormat": {
+          "textFormat": {
+            "fontFamily": "Comfortaa",
+            "fontSize": 14
+          }
+        }
+      },
+      "fields": "userEnteredFormat(textFormat)"
+    }
+  });
+  const batchUpdateRequest = {requests};
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: organization.spreadsheetId,
+    resource: batchUpdateRequest,
+  });
+
+  const day = event.date.getUTCDate();
+  const month = event.date.getUTCMonth();
+  const year = event.date.getUTCFullYear();
+  event.date = `${day > 9 ? day : `0${day}`}.${month > 9 ? month : `0${month}`}.${year}`;
+  const vals = [i, userName];
+  if (event.isHoliday) {
+    vals.push('');
+    vals.push('');
+    vals.push(event.hours);
+    vals.push(event.date);
+  } else {
+    vals.push(event.hours);
+    vals.push(event.date);
+    vals.push('');
+    vals.push('');
   }
-  await updateInRange(sheets, organization.spreadsheetId, [[name]], `${sheetName}!A${row + 1}`);
+  vals.push(event.reason.join("\n"));
+  vals.push(event.workDone.join("\n"));
+  vals.push(event.isHoliday ? 0 : event.hours * 60);
+  vals.push(event.isHoliday ? event.hours * 60 : 0);
+  await updateInRange(sheets, organization.spreadsheetId, [vals], `${sheetName}!A${row + 1}`);
 }
 
 function monthYearToText(monthKey) {
@@ -721,5 +870,45 @@ function monthYearToText(monthKey) {
     case '11': return `Ноември, ${year} г.`;
     case '12': return `Декември, ${year} г.`;
     default: return `${year} г.`;
+  }
+}
+
+function isHoliday(organization, event) {
+  if (event.date.getDay() === 0 || event.date.getDay() === 6) {
+    // ok. it is weekend but is it excluded?
+    let excluded = false;
+    for (const excludedDate of organization.holidays.excludes) {
+      if (excludedDate.getUTCFullYear() === event.date.getUTCFullYear() &&
+        excludedDate.getUTCMonth() === event.date.getUTCMonth() &&
+        excludedDate.getUTCDate() === event.date.getUTCDate()) {
+        excluded = true;
+        break;
+      }
+    }
+    if (excluded) {
+      // consider it working day
+      return false;
+    } else {
+      // it is a weekend day and it is not excluded so consider it holiday
+      return true;
+    }
+  } else {
+    // ok. it is a working day. check if it is not included in holidays
+    let included = false;
+    for (const includedDate of organization.holidays.includes) {
+      if (includedDate.getUTCFullYear() === event.date.getUTCFullYear() &&
+        includedDate.getUTCMonth() === event.date.getUTCMonth() &&
+        includedDate.getUTCDate() === event.date.getUTCDate()) {
+        included = true;
+        break;
+      }
+    }
+    if (included) {
+      // it is a working day but it is marked as holiday
+      return true;
+    } else {
+      // it is just a working day
+      return false;
+    }
   }
 }
