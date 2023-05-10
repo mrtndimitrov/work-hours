@@ -52,7 +52,7 @@ export class OrganizationReportComponent implements OnInit {
       }
     }
     this.months.sort((a: any, b: any) => b.date.getTime() - a.date.getTime());
-    this.selectedMonth = this.months[0].key;
+    this.selectedMonth = this.months.length > 0 ? this.months[0].key : null;
   }
 
   changeGoogleSheet() {

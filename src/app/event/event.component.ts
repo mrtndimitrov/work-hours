@@ -73,8 +73,13 @@ export class EventComponent {
       return;
     }
     AppComponent.toggleProgressBar();
+    const date = this.form.get('date')?.value;
+    const eventDate = new Date();
+    eventDate.setDate(date.getDate());
+    eventDate.setMonth(date.getMonth());
+    eventDate.setFullYear(date.getFullYear());
     if (this.event) {
-      this.event.date = this.form.get('date')?.value;
+      this.event.date = eventDate;
       this.event.hours = this.form.get('hours')?.value;
       this.event.reason = this.form.get('reason')?.value;
       this.event.workDone = this.form.get('workDone')?.value;
@@ -82,7 +87,7 @@ export class EventComponent {
       this.messageService.add({severity:'success', summary:'Редактиране', detail:'Успешно редактирано събитие!', key: 'app-toast'});
     } else {
       this.event = {
-        date: this.form.get('date')?.value,
+        date: eventDate,
         hours: this.form.get('hours')?.value,
         reason: this.form.get('reason')?.value,
         workDone: this.form.get('workDone')?.value,

@@ -7,15 +7,20 @@ const { getFunctions } = require('firebase-admin/functions');
 admin.initializeApp({
   projectId: environment.firebase.projectId,
   databaseURL: environment.firebase.databaseURL,
-  serviceAccountId: 'firebase-adminsdk-92z2m@workhours-2b75b.iam.gserviceaccount.com',
+  serviceAccountId: environment.firebase.serviceAccountId,
 });
 
-exports.authorizeSheet = functions.https.onCall(async (data, context) => {
-  const response = await checkUserAdmin(data, context);
-  if (response.error) {
-    return response;
-  }
+exports.authorizeSheet = functions
+  .region('europe-west1')
+  .runWith({
+    timeoutSeconds: 540
+  })
+  .https.onCall(async (data, context) => {
   try {
+    const response = await checkUserAdmin(data, context);
+    if (response.error) {
+      return response;
+    }
     const jwtClient = await getJwtClient();
     const sheets = google.sheets({version: 'v4', auth: jwtClient});
     await getSpreadsheet(sheets, data.spreadsheetId);
@@ -95,7 +100,12 @@ exports.exportEventToExcel =
     }
   });
 
-exports.scheduleEventsReport = functions.https.onCall(async (data, context) => {
+exports.scheduleEventsReport = functions
+  .region('europe-west1')
+  .runWith({
+    timeoutSeconds: 540
+  })
+  .https.onCall(async (data, context) => {
   const response = await checkUserAdmin(data, context);
   if (response.error) {
     return response;
@@ -103,8 +113,11 @@ exports.scheduleEventsReport = functions.https.onCall(async (data, context) => {
   if (data.prod) {
     const queue = getFunctions().taskQueue('locations/europe-west1/functions/reportEvents');
     await queue.enqueue(data, {
-      scheduleDelaySeconds: 60,
-      dispatchDeadlineSeconds: 60 * 5
+      scheduleDelaySeconds: 5,
+      dispatchDeadlineSeconds: 540,
+      oidcToken: {
+        serviceAccountEmail: "chibuzo-time-tracker-app@appspot.gserviceaccount.com",
+      }
     });
   } else {
     await doReport(data.organization, data.date);
@@ -112,7 +125,12 @@ exports.scheduleEventsReport = functions.https.onCall(async (data, context) => {
   return {success: true}
 });
 
-exports.reportEvents = functions.tasks.taskQueue({
+exports.reportEvents = functions
+  .region('europe-west1')
+  .runWith({
+    timeoutSeconds: 540
+  })
+  .tasks.taskQueue({
   retryConfig: {
     maxAttempts: 5,
     minBackoffSeconds: 60,
@@ -131,8 +149,7 @@ async function checkUserAdmin(data, context) {
     return {error: 'no_params'};
   }
   const uid = context.auth.uid;
-  const obj = admin.database().ref(`/users_organizations/${uid}_${organization}`);
-  const snapshot = await obj.get();
+  const snapshot = await admin.database().ref(`/users_organizations/${uid}_${organization}`).once('value');
   if (!snapshot.exists()) {
     return {error: 'wrong_user'};
   }
@@ -357,6 +374,7 @@ async function doReport(organizationKey, date) {
       await clearSheet(sheets, organization.spreadsheetId, reportSheetId, reportSheetName);
     }
     await writeHeader(sheets, reportSheetId, organization, reportSheetName, dateString);
+    const usersWithoutEvents = [];
     let writtenRows = 3;
     // let's find out now all the users that have events in the specified month
     const snapshot = await admin.database().ref('users_organizations').orderByChild('organization').equalTo(organizationKey).once('value');
@@ -371,12 +389,13 @@ async function doReport(organizationKey, date) {
         functions.logger.error(`Error in doReport: user ${userOrganization.user} missing`, {structuredData: true});
         return {error: 'no user'};
       }
+      const user = userSnapshot.val();
       const eventsSnapshot = await admin.database().ref(`events/${organizationKey}/${userOrganization.user}`)
         .orderByChild('date').startAt(date).endAt(nextDate).once('value');
       if (!eventsSnapshot.exists()) {
+        usersWithoutEvents.push(user);
         continue;
       }
-      const user = userSnapshot.val();
       let userName = user.email;
       if (user.firstName) {
         userName = `${user.firstName} ${user.lastName}`;
@@ -417,7 +436,60 @@ async function doReport(organizationKey, date) {
       for (const event of Object.values(events)) {
         await writeEvent(sheets, organization, reportSheetId, reportSheetName, userName, event, writtenRows++, i++);
       }
+      await writeTotal(sheets, organization, reportSheetId, reportSheetName, writtenRows++, totalHoursWorkingDays, totalHoursHolidays);
     }
+    if (usersWithoutEvents.length > 0) {
+      await writeHeaderUsersNoEvents(sheets, organization, reportSheetId, reportSheetName, writtenRows++);
+      for (const userWithoutEvents of usersWithoutEvents) {
+        let userName = userWithoutEvents.email;
+        if (userWithoutEvents.firstName) {
+          userName = `${userWithoutEvents.firstName} ${userWithoutEvents.lastName}`.toUpperCase();
+        }
+        await writeUserNoEvents(sheets, organization, reportSheetId, reportSheetName, userName, writtenRows++);
+      }
+    }
+    // last thing - add border around each cell
+    const requests = [];
+    requests.push({
+      "updateBorders": {
+        "range": {
+          "sheetId": reportSheetId,
+          "startRowIndex": 0,
+          "endRowIndex": writtenRows,
+          "startColumnIndex": 0,
+          "endColumnIndex": 10
+        },
+        "top": {
+          "style": "SOLID",
+          "width": 1
+        },
+        "bottom": {
+          "style": "SOLID",
+          "width": 1
+        },
+        "left": {
+          "style": "SOLID",
+          "width": 1
+        },
+        "right": {
+          "style": "SOLID",
+          "width": 1
+        },
+        "innerHorizontal": {
+          "style": "SOLID",
+          "width": 1
+        },
+        "innerVertical": {
+          "style": "SOLID",
+          "width": 1
+        },
+      }
+    });
+    const batchUpdateRequest = {requests};
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: organization.spreadsheetId,
+      resource: batchUpdateRequest,
+    });
   } catch (e) {
     functions.logger.error(`Error in doReport: ${e.message}`, {structuredData: true});
     return {error: e};
@@ -426,6 +498,10 @@ async function doReport(organizationKey, date) {
 }
 
 async function clearSheet(sheets, spreadsheetId, sheetId, sheetName) {
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId: spreadsheetId,
+    range: sheetName,
+  });
   const requests = [];
   requests.push({
     "updateCells": {
@@ -442,14 +518,30 @@ async function clearSheet(sheets, spreadsheetId, sheetId, sheetName) {
       },
     }
   });
+  requests.push({
+    "autoResizeDimensions": {
+      "dimensions": {
+        "sheetId": sheetId,
+        "dimension": "COLUMNS",
+        "startIndex": 0,
+        "endIndex": 10
+      }
+    }
+  });
+  requests.push({
+    "autoResizeDimensions": {
+      "dimensions": {
+        "sheetId": sheetId,
+        "dimension": "ROWS",
+        "startIndex": 0,
+        "endIndex": 10000
+      }
+    }
+  });
   const batchUpdateRequest = {requests};
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId: spreadsheetId,
     resource: batchUpdateRequest,
-  });
-  await sheets.spreadsheets.values.clear({
-    spreadsheetId: spreadsheetId,
-    range: sheetName,
   });
 }
 
@@ -852,6 +944,179 @@ async function writeEvent(sheets, organization, sheetId, sheetName, userName, ev
   vals.push(event.isHoliday ? 0 : event.hours * 60);
   vals.push(event.isHoliday ? event.hours * 60 : 0);
   await updateInRange(sheets, organization.spreadsheetId, [vals], `${sheetName}!A${row + 1}`);
+}
+
+async function writeTotal(sheets, organization, sheetId, sheetName, row, totalHoursWorkingDays, totalHoursHolidays) {
+  const requests = [];
+  requests.push({
+    "repeatCell": {
+      "range": {
+        "sheetId": sheetId,
+        "startRowIndex": row,
+        "endRowIndex": row + 1,
+        "startColumnIndex": 0,
+        "endColumnIndex": 10
+      },
+      "cell": {
+        "userEnteredFormat": {
+          "textFormat": {
+            "fontFamily": "Arial",
+            "fontSize": 14,
+            "bold": true
+          }
+        }
+      },
+      "fields": "userEnteredFormat(textFormat)"
+    }
+  });
+  requests.push({
+    "updateDimensionProperties": {
+      "range": {
+        "sheetId": sheetId,
+        "dimension": "ROWS",
+        "startIndex": row,
+        "endIndex": row + 1
+      },
+      "properties": {
+        "pixelSize": 45
+      },
+      "fields": "pixelSize"
+    }
+  });
+  const batchUpdateRequest = {requests};
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: organization.spreadsheetId,
+    resource: batchUpdateRequest,
+  });
+  await updateInRange(sheets, organization.spreadsheetId,
+    [['', 'ОБЩО:', totalHoursWorkingDays, '', totalHoursHolidays, '', '', '', totalHoursWorkingDays * 60, totalHoursHolidays * 60]],
+    `${sheetName}!A${row + 1}`);
+}
+
+async function writeHeaderUsersNoEvents(sheets, organization, sheetId, sheetName, row) {
+  const requests = [];
+  requests.push({
+    "repeatCell": {
+      "range": {
+        "sheetId": sheetId,
+        "startRowIndex": row,
+        "endRowIndex": row + 1,
+        "startColumnIndex": 0,
+        "endColumnIndex": 10
+      },
+      "cell": {
+        "userEnteredFormat": {
+          "backgroundColor": {
+            "red": 239/255,
+            "green": 239/255,
+            "blue": 239/255
+          },
+          "textFormat": {
+            "fontFamily": "Comfortaa",
+            "fontSize": 16,
+            "bold": true
+          }
+        }
+      },
+      "fields": "userEnteredFormat(backgroundColor,textFormat)"
+    }
+  });
+  requests.push({
+    "updateDimensionProperties": {
+      "range": {
+        "sheetId": sheetId,
+        "dimension": "ROWS",
+        "startIndex": row,
+        "endIndex": row + 1
+      },
+      "properties": {
+        "pixelSize": 50
+      },
+      "fields": "pixelSize"
+    }
+  });
+  requests.push({
+    "mergeCells": {
+      "range": {
+        "sheetId": sheetId,
+        "startRowIndex": row,
+        "endRowIndex": row + 1,
+        "startColumnIndex": 0,
+        "endColumnIndex": 10
+      },
+      "mergeType": "MERGE_ALL"
+    }
+  });
+  const batchUpdateRequest = {requests};
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: organization.spreadsheetId,
+    resource: batchUpdateRequest,
+  });
+  await updateInRange(sheets, organization.spreadsheetId,
+    [['БЕЗ извънреден труд за месеца']],
+    `${sheetName}!A${row + 1}`);
+}
+
+async function writeUserNoEvents(sheets, organization, sheetId, sheetName, userName, row) {
+  const requests = [];
+  requests.push({
+    "repeatCell": {
+      "range": {
+        "sheetId": sheetId,
+        "startRowIndex": row,
+        "endRowIndex": row + 1,
+        "startColumnIndex": 0,
+        "endColumnIndex": 10
+      },
+      "cell": {
+        "userEnteredFormat": {
+          "backgroundColor": {
+            "red": 239/255,
+            "green": 239/255,
+            "blue": 239/255
+          },
+          "textFormat": {
+            "fontFamily": "Comfortaa",
+            "fontSize": 14,
+            "bold": true
+          }
+        }
+      },
+      "fields": "userEnteredFormat(backgroundColor,textFormat)"
+    }
+  });
+  requests.push({
+    "updateDimensionProperties": {
+      "range": {
+        "sheetId": sheetId,
+        "dimension": "ROWS",
+        "startIndex": row,
+        "endIndex": row + 1
+      },
+      "properties": {
+        "pixelSize": 45
+      },
+      "fields": "pixelSize"
+    }
+  });
+  requests.push({
+    "mergeCells": {
+      "range": {
+        "sheetId": sheetId,
+        "startRowIndex": row,
+        "endRowIndex": row + 1,
+        "startColumnIndex": 0,
+        "endColumnIndex": 10
+      },
+      "mergeType": "MERGE_ALL"
+    }
+  });
+  const batchUpdateRequest = {requests};
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: organization.spreadsheetId,
+    resource: batchUpdateRequest,
+  });
+  await updateInRange(sheets, organization.spreadsheetId, [[userName]], `${sheetName}!A${row + 1}`);
 }
 
 function monthYearToText(monthKey) {

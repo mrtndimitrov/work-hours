@@ -214,7 +214,7 @@ export class OrganizationsService {
   async setSpreadsheetId(spreadsheetId: string) {
     const db = getDatabase();
     const currentOrganization: Organization = await this.getCurrentOrganization();
-    const functions = getFunctions(getApp());
+    const functions = getFunctions(getApp(), 'europe-west1');
     if (!environment.production) {
       connectFunctionsEmulator(functions, 'localhost', 5001);
     }

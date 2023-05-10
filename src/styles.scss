@@ -8,12 +8,31 @@
 @import "assets/layout/styles/theme/lara-light-blue/theme.css";
 
 p-progressbar {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   z-index: 1000;
   .p-progressbar {
     height: 3px;
+  }
+}
+
+td.fc-day {
+  position: relative;
+}
+
+td.holiday {
+  background-color: lightgray;
+
+  &::after {
+    content: 'Почивен ден';
+    position: absolute;
+    width: 100%;
+    text-align: right;
+    bottom:0;
+    right:0;
+    z-index: 10;
+    font-size: 0.8em;
   }
 }

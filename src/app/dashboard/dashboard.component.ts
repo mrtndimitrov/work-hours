@@ -3,6 +3,7 @@ import { User } from '../models/user';
 import { monthYearToText } from '../shared/helpers';
 import { EventsService } from '../services/events.service';
 import { UsersService } from '../services/users.service';
+import { NavigationEnd, Router } from "@angular/router";
 
 @Component({
   selector: 'app-dashboard',
@@ -10,7 +11,13 @@ import { UsersService } from '../services/users.service';
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
-  constructor(private eventsService: EventsService, private usersService: UsersService) {}
+  constructor(private eventsService: EventsService, private usersService: UsersService, private router: Router) {
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.ngOnInit();
+      }
+    });
+  }
   data: any;
 
   options: any;

@@ -185,8 +185,8 @@ export class EventsService {
 
   async reportEvents(date: string) {
     const organization: Organization = await this.organizationsService.getCurrentOrganization();
-    const functions = getFunctions(getApp());
-    let production = true;
+    const functions = getFunctions(getApp(), 'europe-west1');
+    let production = false; // TODO: set it to true when fixing the queue
     if (!environment.production) {
       production = false;
       connectFunctionsEmulator(functions, 'localhost', 5001);

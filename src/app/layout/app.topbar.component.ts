@@ -27,6 +27,7 @@ export class AppTopBarComponent implements OnInit {
               private authService: AuthenticationService, public organizationsService: OrganizationsService) {
     this.organizationsService.onMyOrganizationsChangeSubscribe(() => {
       this.ngOnInit();
+      console.log('XXXXXXXXXX')
     });
   }
 
