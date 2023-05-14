@@ -68,6 +68,7 @@ export class EventsService {
       reason: event.reason
     };
     await update(ref(db), updates);
+    this.eventsPerUser[`${user.uid}_${organization.key}`].push(event);
     return newEventKey;
   }
 
@@ -87,6 +88,7 @@ export class EventsService {
       reason: event.reason
     };
     await update(ref(db), updates);
+    delete this.eventsPerUser[`${user.uid}_${organization.key}`];
   }
 
   async getEvent(id: string) {
@@ -108,12 +110,14 @@ export class EventsService {
     const organization: Organization = await this.organizationsService.getCurrentOrganization();
     const user: User = await this.usersService.getCurrentUser();
     await remove(ref(db, `events/${organization.key}/${user.uid}/${id}`));
+    delete this.eventsPerUser[`${user.uid}_${organization.key}`];
   }
 
   async deleteEvents(organizationKey: string) {
     const db = getDatabase();
     const user: User = await this.usersService.getCurrentUser();
     await remove(ref(db, `events/${organizationKey}/${user.uid}`));
+    delete this.eventsPerUser[`${user.uid}_${organizationKey}`];
   }
 
   constructTitle(event: Event) {
