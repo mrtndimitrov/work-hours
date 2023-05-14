@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import {
+  AbstractControl,
   FormControl,
   FormGroup,
   Validators
@@ -56,9 +57,9 @@ export class EventComponent {
         this.form.get('date')?.disable();
         this.form.get('hours')?.setValue(event.hours);
         this.form.get('hours')?.disable();
-        this.form.get('reason')?.setValue(event.reason);
+        this.form.get('reason')?.setValue({str: event.reason});
         this.form.get('reason')?.disable();
-        this.form.get('workDone')?.setValue(event.workDone);
+        this.form.get('workDone')?.setValue({str: event.workDone});
         this.form.get('workDone')?.disable();
       }
     });
@@ -80,22 +81,25 @@ export class EventComponent {
     AppComponent.toggleProgressBar();
     const date = this.form.get('date')?.value;
     const eventDate = new Date();
+    eventDate.setHours(11);
     eventDate.setDate(date.getDate());
     eventDate.setMonth(date.getMonth());
     eventDate.setFullYear(date.getFullYear());
+    const reasonControl: AbstractControl = this.form.get('reason')!;
+    const workDoneControl: AbstractControl = this.form.get('workDone')!;
     if (this.event) {
       this.event.date = eventDate;
       this.event.hours = this.form.get('hours')?.value;
-      this.event.reason = this.form.get('reason')?.value;
-      this.event.workDone = this.form.get('workDone')?.value;
+      this.event.reason = reasonControl.value.str ? reasonControl.value.str : reasonControl.value;
+      this.event.workDone = workDoneControl.value.str ? workDoneControl.value.str : workDoneControl.value;
       await this.eventsService.updateEvent(this.event);
       this.messageService.add({severity:'success', summary:'Редактиране', detail:'Успешно редактирано събитие!', key: 'app-toast'});
     } else {
       this.event = {
         date: eventDate,
         hours: this.form.get('hours')?.value,
-        reason: this.form.get('reason')?.value,
-        workDone: this.form.get('workDone')?.value,
+        reason: reasonControl.value.str ? reasonControl.value.str : reasonControl.value,
+        workDone: workDoneControl.value.str ? workDoneControl.value.str : workDoneControl.value,
       };
       this.event.title = this.eventsService.constructTitle(this.event);
       const newEventId = await this.eventsService.addEvent(this.event);
