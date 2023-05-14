@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { AppLayoutModule } from './layout/app.layout.module';
@@ -46,6 +45,8 @@ import { HolidaysComponent } from './holidays/holidays.component';
 import { UserReportComponent } from './user-report/user-report.component';
 import { ChartModule } from 'primeng/chart';
 import { OrganizationReportComponent } from './organization-report/organization-report.component';
+import { AutoCompleteModule } from 'primeng/autocomplete';
+
 
 @NgModule({
   declarations: [
@@ -93,7 +94,8 @@ import { OrganizationReportComponent } from './organization-report/organization-
     ConfirmDialogModule,
     DropdownModule,
     FormsModule,
-    ChartModule
+    ChartModule,
+    AutoCompleteModule
   ],
   providers: [
     ScreenTrackingService,

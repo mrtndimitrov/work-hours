@@ -27,7 +27,6 @@ export class AppTopBarComponent implements OnInit {
               private authService: AuthenticationService, public organizationsService: OrganizationsService) {
     this.organizationsService.onMyOrganizationsChangeSubscribe(() => {
       this.ngOnInit();
-      console.log('XXXXXXXXXX')
     });
   }
 
@@ -41,5 +40,10 @@ export class AppTopBarComponent implements OnInit {
     this.organizationsService.invalidateCurrentOrganization();
     this.usersService.invalidateCurrentUser();
     this.router.navigate(['login']);
+  }
+
+  organizationChanged() {
+    this.organizationsService.setCurrentOrganization(this.selectedOrganization!);
+    this.router.navigate(['/']);
   }
 }

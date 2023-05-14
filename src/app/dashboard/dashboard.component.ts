@@ -1,26 +1,22 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { User } from '../models/user';
 import { monthYearToText } from '../shared/helpers';
 import { EventsService } from '../services/events.service';
 import { UsersService } from '../services/users.service';
 import { NavigationEnd, Router } from "@angular/router";
+import { Subscription } from "rxjs";
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
-export class DashboardComponent implements OnInit {
-  constructor(private eventsService: EventsService, private usersService: UsersService, private router: Router) {
-    this.router.events.subscribe((event) => {
-      if (event instanceof NavigationEnd) {
-        this.ngOnInit();
-      }
-    });
-  }
+export class DashboardComponent implements OnInit, OnDestroy {
+  subscription: Subscription | null = null;
   data: any;
-
   options: any;
+
+  constructor(private eventsService: EventsService, private usersService: UsersService, private router: Router) {}
 
   async ngOnInit() {
     const documentStyle = getComputedStyle(document.documentElement);
@@ -103,5 +99,18 @@ export class DashboardComponent implements OnInit {
 
       }
     };
+    if (!this.subscription) {
+      this.subscription = this.router.events.subscribe((event) => {
+        if (event instanceof NavigationEnd) {
+          this.ngOnInit();
+        }
+      });
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
   }
 }

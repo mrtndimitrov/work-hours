@@ -14,6 +14,8 @@ import { getApp } from '@angular/fire/app';
   providedIn: 'root'
 })
 export class EventsService {
+  eventsPerUser: any = {};
+
   constructor(private db: AngularFireDatabase, private organizationsService: OrganizationsService,
               private usersService: UsersService) {}
 
@@ -27,6 +29,9 @@ export class EventsService {
       const user: User = await this.usersService.getCurrentUser();
       uid = user.uid;
     }
+    if (this.eventsPerUser[`${uid}_${organization.key}`]) {
+      return this.eventsPerUser[`${uid}_${organization.key}`];
+    }
     const snapshot = await get(child(dbRef, `events/${organization.key}/${uid}`));
     if (snapshot.exists()) {
       const events: Array<Event> = [];
@@ -38,6 +43,7 @@ export class EventsService {
         event.id = key;
         events.push(event);
       }
+      this.eventsPerUser[`${uid}_${organization.key}`] = events;
       return events;
     } else {
       return [];

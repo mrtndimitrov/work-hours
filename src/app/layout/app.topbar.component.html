@@ -15,7 +15,7 @@
 
   <span style="margin:0 5px 0 20px">Текуща организация:</span>
   <p-dropdown [options]="organizations" optionLabel="name" [(ngModel)]="selectedOrganization"
-              (onChange)="organizationsService.setCurrentOrganization(selectedOrganization!); router.navigate(['/']);"></p-dropdown>
+              (onChange)="organizationChanged()"></p-dropdown>
 
   <div #topbarmenu class="layout-topbar-menu"
        [ngClass]="{'layout-topbar-menu-mobile-active': layoutService.state.profileSidebarVisible}">

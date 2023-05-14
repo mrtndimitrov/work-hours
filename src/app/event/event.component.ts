@@ -20,6 +20,10 @@ export class EventComponent {
   event: Event | null = null;
   editMode: boolean = true;
   form: FormGroup;
+  workDoneStrings: any[] = [];
+  filteredWorkDoneStrings: any[] = [];
+  reasonStrings: any[] = [];
+  filteredReasonStrings: any[] = [];
 
   editEventMenuItems = [{
     label: 'Редактирай',
@@ -65,6 +69,7 @@ export class EventComponent {
         this.form.get('date')?.setValue(new Date());
       }
     });
+    this.buildAutocompleteStrings();
   }
 
   async onSubmit() {
@@ -131,5 +136,70 @@ export class EventComponent {
     await this.eventsService.deleteEvent(this.event?.id!);
     this.messageService.add({severity:'success', summary:'Изтриване', detail:'Успешно изтрито събитие!', key: 'app-toast'});
     this.router.navigate(['/']);
+  }
+
+  filterWorkDoneString(query: string) {
+    query = query.toLowerCase();
+    let filtered: any[] = [];
+    for (const workDoneString of this.workDoneStrings) {
+      if (workDoneString.lowerCase.indexOf(query) == 0) {
+        filtered.push(workDoneString);
+      }
+    }
+    this.filteredWorkDoneStrings = filtered;
+  }
+
+  filterReasonString(query: string) {
+    query = query.toLowerCase();
+    let filtered: any[] = [];
+    for (const reasonString of this.reasonStrings) {
+      if (reasonString.lowerCase.indexOf(query) == 0) {
+        filtered.push(reasonString);
+      }
+    }
+    this.filteredReasonStrings = filtered;
+  }
+
+  private buildAutocompleteStrings() {
+    this.workDoneStrings = [];
+    this.filteredWorkDoneStrings = [];
+    this.reasonStrings = [];
+    this.filteredReasonStrings = [];
+    this.eventsService.listEvents().then((events: Event[]) => {
+      for (const event of events) {
+        let found = false;
+        const workDoneLowerCase = event.workDone.toLowerCase();
+        for (const workDoneString of this.workDoneStrings) {
+          if (workDoneString.lowerCase === workDoneLowerCase) {
+            workDoneString.num++;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          this.workDoneStrings.push({str: event.workDone, lowerCase: workDoneLowerCase, num: 1});
+        }
+        found = false;
+        const reasonLowerCase = event.reason.toLowerCase();
+        for (const reasonString of this.reasonStrings) {
+          if (reasonString.lowerCase === reasonLowerCase) {
+            reasonString.num++;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          this.reasonStrings.push({str: event.reason, lowerCase: reasonLowerCase, num: 1});
+        }
+      }
+      this.workDoneStrings.sort((a: any, b: any) => {
+        return b.num - a.num;
+      });
+      this.reasonStrings.sort((a: any, b: any) => {
+        return b.num - a.num;
+      });
+      this.filteredWorkDoneStrings = this.workDoneStrings.map((a: any) => ({...a}));
+      this.filteredReasonStrings = this.reasonStrings.map((a: any) => ({...a}));
+    });
   }
 }

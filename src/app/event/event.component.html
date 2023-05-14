@@ -16,12 +16,16 @@
     <p-inputNumber formControlName="hours" [class.ng-dirty]="form.get('hours')!.invalid && form.get('hours')!.touched"
                    [step]="0.5" [min]="0.5" [max]="24" [showButtons]="true" [maxFractionDigits]="1"></p-inputNumber>
     <h5>Свършена работа</h5>
-    <textarea formControlName="workDone"
-              [class.ng-dirty]="form.get('workDone')!.invalid && form.get('workDone')!.touched" [rows]="3"
-              pInputTextarea [autoResize]="true"></textarea>
+    <div class="p-fluid">
+      <p-autoComplete formControlName="workDone" styleClass="wid100" [dropdown]="true" [class.ng-dirty]="form.get('workDone')!.invalid && form.get('workDone')!.touched"
+                      [suggestions]="filteredWorkDoneStrings" field="str" (completeMethod)="filterWorkDoneString($event.query)"></p-autoComplete>
+    </div>
     <h5>Причина за извънредния труд</h5>
-    <textarea formControlName="reason" [class.ng-dirty]="form.get('reason')!.invalid && form.get('reason')!.touched"
-              [rows]="3" pInputTextarea [autoResize]="true"></textarea>
+    <div class="p-fluid">
+      <p-autoComplete formControlName="reason" styleClass="wid100" [dropdown]="true" [class.ng-dirty]="form.get('reason')!.invalid && form.get('reason')!.touched"
+                      [suggestions]="filteredReasonStrings" field="str" (completeMethod)="filterReasonString($event.query)"></p-autoComplete>
+    </div>
+    <br>
     <p *ngIf="editMode || event === null">
       <button pButton type="submit" [label]="event === null ? 'Създай' : 'Обнови'"></button>
     </p>
