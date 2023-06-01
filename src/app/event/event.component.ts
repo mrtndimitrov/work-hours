@@ -79,12 +79,9 @@ export class EventComponent {
       return;
     }
     AppComponent.toggleProgressBar();
-    const date = this.form.get('date')?.value;
-    const eventDate = new Date();
+    const eventDate = this.form.get('date')?.value;
+    // TODO: investigate why this is needed (when creating dates around midnight sometimes the day is changed so this "fix" was introduced)
     eventDate.setHours(11);
-    eventDate.setDate(date.getDate());
-    eventDate.setMonth(date.getMonth());
-    eventDate.setFullYear(date.getFullYear());
     const reasonControl: AbstractControl = this.form.get('reason')!;
     const workDoneControl: AbstractControl = this.form.get('workDone')!;
     if (this.event) {

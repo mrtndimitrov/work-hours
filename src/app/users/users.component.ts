@@ -42,6 +42,9 @@ export class UsersComponent {
           detail: 'Потребителят беше успешно изтрит!',
           key: 'app-toast'
         });
+        this.usersService.getUsers(user.organization).then((users: any) => {
+          this.users = users;
+        });
         AppComponent.toggleProgressBar();
       }
     });

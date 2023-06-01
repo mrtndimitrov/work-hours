@@ -46,6 +46,11 @@ export class SettingsComponent implements OnInit{
   }
 
   async ngOnInit() {
+    await this.setOrganizations();
+    await this.getInvitations();
+  }
+
+  private async setOrganizations() {
     this.organizations = await this.organizationsService.listMyOrganizations();
     for (const organization of this.organizations) {
       if (organization.isDefault) {
@@ -53,7 +58,6 @@ export class SettingsComponent implements OnInit{
         break;
       }
     }
-    await this.getInvitations();
   }
 
   private async getInvitations() {
@@ -92,14 +96,14 @@ export class SettingsComponent implements OnInit{
     await this.organizationsService.addOrganization({key: key!, name: name!, invitations: [], users: []});
     this.newForm.get('key')?.setValue('');
     this.newForm.get('name')?.setValue('');
-    this.organizations = await this.organizationsService.listMyOrganizations();
-    this.organizationsForm.get('defaultOrganization')?.setValue(key!);
+    await this.setOrganizations();
     AppComponent.toggleProgressBar();
   }
 
   async changeDefaultOrganization() {
     AppComponent.toggleProgressBar();
     await this.organizationsService.setDefaultOrganization(this.organizationsForm.get('defaultOrganization')?.value!);
+    await this.setOrganizations();
     this.messageService.add({
       severity: 'success',
       summary: 'Организация по подразбиране',
@@ -135,6 +139,7 @@ export class SettingsComponent implements OnInit{
             detail: 'Вие успешно напуснахте организацията!',
             key: 'app-toast'
           });
+          await this.setOrganizations();
           AppComponent.toggleProgressBar();
         }
       });
@@ -144,8 +149,7 @@ export class SettingsComponent implements OnInit{
   async acceptInvitation(invitation: Invitation) {
     AppComponent.toggleProgressBar();
     await this.organizationsService.addUserToOrganization(invitation.organization, invitation.role);
-    this.organizations = await this.organizationsService.listMyOrganizations();
-    this.organizationsForm.get('defaultOrganization')?.setValue(invitation.organization);
+    await this.setOrganizations();
     await this.invitationsService.deleteInvitation(invitation.key);
     this.messageService.add({
       severity: 'success',

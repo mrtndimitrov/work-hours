@@ -3,6 +3,7 @@
     <label for="last-name" class="block text-900 font-medium mb-2">Google Sheet ID</label>
     <input id="last-name" type="text" placeholder="Google Sheet ID" pInputText class="w-full mb-3" formControlName="spreadsheetId">
     <button pButton type="submit" label="Въведи"></button>
+    <a *ngIf="googleSpreadsheetForm.get('spreadsheetId')?.value" target="_blank" href="https://docs.google.com/spreadsheets/d/{{googleSpreadsheetForm.get('spreadsheetId')?.value}}/edit#gid=0" style="float: right">Линк към въведения Google Sheet</a>
   </form>
 </p-panel>
 <p-panel header="Въведени извънредни часове по месеци">

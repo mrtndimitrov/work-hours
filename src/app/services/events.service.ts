@@ -68,7 +68,11 @@ export class EventsService {
       reason: event.reason
     };
     await update(ref(db), updates);
-    this.eventsPerUser[`${user.uid}_${organization.key}`].push(event);
+    if (this.eventsPerUser[`${user.uid}_${organization.key}`]) {
+      this.eventsPerUser[`${user.uid}_${organization.key}`].push(event);
+    } else {
+      this.eventsPerUser[`${user.uid}_${organization.key}`] = [event];
+    }
     return newEventKey;
   }
 
