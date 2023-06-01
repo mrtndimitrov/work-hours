@@ -373,7 +373,9 @@ async function doReport(organizationKey, date) {
     } else {
       await clearSheet(sheets, organization.spreadsheetId, reportSheetId, reportSheetName);
     }
-    await writeHeader(sheets, reportSheetId, organization, reportSheetName, dateString);
+    const requests = [];
+    const valueUpdates = [];
+    await writeHeader(reportSheetId, organization, reportSheetName, dateString, requests, valueUpdates);
     const usersWithoutEvents = [];
     let writtenRows = 3;
     // let's find out now all the users that have events in the specified month
@@ -400,7 +402,7 @@ async function doReport(organizationKey, date) {
       if (user.firstName) {
         userName = `${user.firstName} ${user.lastName}`;
       }
-      await writeUserHeader(sheets, reportSheetId, organization, reportSheetName, dateString, userName.toUpperCase()                    , writtenRows);
+      await writeUserHeader(reportSheetId, reportSheetName, dateString, userName.toUpperCase(), writtenRows, requests, valueUpdates);
       writtenRows += 2;
       // our first job is to group the events on a day meaning max one event per day
       let events = {};
@@ -434,22 +436,21 @@ async function doReport(organizationKey, date) {
       );
       let i = 1;
       for (const event of Object.values(events)) {
-        await writeEvent(sheets, organization, reportSheetId, reportSheetName, userName, event, writtenRows++, i++);
+        await writeEvent(reportSheetId, reportSheetName, userName, event, writtenRows++, i++, requests, valueUpdates);
       }
-      await writeTotal(sheets, organization, reportSheetId, reportSheetName, writtenRows++, totalHoursWorkingDays, totalHoursHolidays);
+      await writeTotal(reportSheetId, reportSheetName, writtenRows++, totalHoursWorkingDays, totalHoursHolidays, requests, valueUpdates);
     }
     if (usersWithoutEvents.length > 0) {
-      await writeHeaderUsersNoEvents(sheets, organization, reportSheetId, reportSheetName, writtenRows++);
+      await writeHeaderUsersNoEvents(reportSheetId, reportSheetName, writtenRows++, requests, valueUpdates);
       for (const userWithoutEvents of usersWithoutEvents) {
         let userName = userWithoutEvents.email;
         if (userWithoutEvents.firstName) {
           userName = `${userWithoutEvents.firstName} ${userWithoutEvents.lastName}`.toUpperCase();
         }
-        await writeUserNoEvents(sheets, organization, reportSheetId, reportSheetName, userName, writtenRows++);
+        await writeUserNoEvents(reportSheetId, reportSheetName, userName, writtenRows++, requests, valueUpdates);
       }
     }
     // last thing - add border around each cell
-    const requests = [];
     requests.push({
       "updateBorders": {
         "range": {
@@ -489,6 +490,14 @@ async function doReport(organizationKey, date) {
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: organization.spreadsheetId,
       resource: batchUpdateRequest,
+    });
+    // now write the text values
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: organization.spreadsheetId,
+      resource: {
+        valueInputOption: 'RAW',
+        data: valueUpdates
+      }
     });
   } catch (e) {
     functions.logger.error(`Error in doReport: ${e.message}`, {structuredData: true});
@@ -545,8 +554,7 @@ async function clearSheet(sheets, spreadsheetId, sheetId, sheetName) {
   });
 }
 
-async function writeHeader(sheets, sheetId, organization, sheetName, dateString) {
-  const requests = [];
+async function writeHeader(sheetId, organization, sheetName, dateString, requests, valueUpdates) {
   requests.push({
     "repeatCell": {
       "range": {
@@ -775,21 +783,23 @@ async function writeHeader(sheets, sheetId, organization, sheetName, dateString)
       "fields": "userEnteredFormat(textFormat)"
     }
   });
-  const batchUpdateRequest = {requests};
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: organization.spreadsheetId,
-    resource: batchUpdateRequest,
+
+  valueUpdates.push({
+    range: `${sheetName}!A1`,
+    values: [[`Извънреден труд на ${organization.name} за ${dateString}`]]
   });
-  await updateInRange(sheets, organization.spreadsheetId, [[`Извънреден труд на ${organization.name} за ${dateString}`]], `${sheetName}!A1`);
-  await updateInRange(sheets, organization.spreadsheetId,
-    [['', 'Име, фамилия', "В работни дни\n(часове и дата)", '', "В почивни дни\n(часове и дата)", '',
-      'Причина, наложила извънреден труд', 'Извършена работа', 'Работа в минути', '']], `${sheetName}!A2`);
-  await updateInRange(sheets, organization.spreadsheetId,
-    [['№', '', 'ЧАСОВЕ', 'ДАТА', 'ЧАСОВЕ', 'ДАТА', '', '', 'Работни дни', 'Почивни дни']], `${sheetName}!A3`);
+  valueUpdates.push({
+    range: `${sheetName}!A2`,
+    values: [['', 'Име, фамилия', "В работни дни\n(часове и дата)", '', "В почивни дни\n(часове и дата)", '',
+      'Причина, наложила извънреден труд', 'Извършена работа', 'Работа в минути', '']]
+  });
+  valueUpdates.push({
+    range: `${sheetName}!A3`,
+    values: [['№', '', 'ЧАСОВЕ', 'ДАТА', 'ЧАСОВЕ', 'ДАТА', '', '', 'Работни дни', 'Почивни дни']]
+  });
 }
 
-async function writeUserHeader(sheets, sheetId, organization, sheetName, dateString, userName, row){
-  const requests = [];
+async function writeUserHeader(sheetId, sheetName, dateString, userName, row, requests, valueUpdates){
   requests.push({
     "repeatCell": {
       "range": {
@@ -885,18 +895,18 @@ async function writeUserHeader(sheets, sheetId, organization, sheetName, dateStr
       "mergeType": "MERGE_ALL"
     }
   });
-  const batchUpdateRequest = {requests};
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: organization.spreadsheetId,
-    resource: batchUpdateRequest,
-  });
 
-  await updateInRange(sheets, organization.spreadsheetId, [[userName]], `${sheetName}!A${row + 1}`);
-  await updateInRange(sheets, organization.spreadsheetId, [[dateString]], `${sheetName}!A${row + 2}`);
+  valueUpdates.push({
+    range: `${sheetName}!A${row + 1}`,
+    values: [[userName]]
+  });
+  valueUpdates.push({
+    range: `${sheetName}!A${row + 2}`,
+    values: [[dateString]]
+  });
 }
 
-async function writeEvent(sheets, organization, sheetId, sheetName, userName, event, row, i) {
-  const requests = [];
+async function writeEvent(sheetId, sheetName, userName, event, row, i, requests, valueUpdates) {
   requests.push({
     "repeatCell": {
       "range": {
@@ -916,11 +926,6 @@ async function writeEvent(sheets, organization, sheetId, sheetName, userName, ev
       },
       "fields": "userEnteredFormat(textFormat)"
     }
-  });
-  const batchUpdateRequest = {requests};
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: organization.spreadsheetId,
-    resource: batchUpdateRequest,
   });
 
   const day = event.date.getUTCDate();
@@ -943,11 +948,13 @@ async function writeEvent(sheets, organization, sheetId, sheetName, userName, ev
   vals.push(event.workDone.join("\n"));
   vals.push(event.isHoliday ? 0 : event.hours * 60);
   vals.push(event.isHoliday ? event.hours * 60 : 0);
-  await updateInRange(sheets, organization.spreadsheetId, [vals], `${sheetName}!A${row + 1}`);
+  valueUpdates.push({
+    range: `${sheetName}!A${row + 1}`,
+    values: [vals]
+  });
 }
 
-async function writeTotal(sheets, organization, sheetId, sheetName, row, totalHoursWorkingDays, totalHoursHolidays) {
-  const requests = [];
+async function writeTotal(sheetId, sheetName, row, totalHoursWorkingDays, totalHoursHolidays, requests, valueUpdates) {
   requests.push({
     "repeatCell": {
       "range": {
@@ -983,18 +990,14 @@ async function writeTotal(sheets, organization, sheetId, sheetName, row, totalHo
       "fields": "pixelSize"
     }
   });
-  const batchUpdateRequest = {requests};
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: organization.spreadsheetId,
-    resource: batchUpdateRequest,
+
+  valueUpdates.push({
+    range: `${sheetName}!A${row + 1}`,
+    values: [['', 'ОБЩО:', totalHoursWorkingDays, '', totalHoursHolidays, '', '', '', totalHoursWorkingDays * 60, totalHoursHolidays * 60]]
   });
-  await updateInRange(sheets, organization.spreadsheetId,
-    [['', 'ОБЩО:', totalHoursWorkingDays, '', totalHoursHolidays, '', '', '', totalHoursWorkingDays * 60, totalHoursHolidays * 60]],
-    `${sheetName}!A${row + 1}`);
 }
 
-async function writeHeaderUsersNoEvents(sheets, organization, sheetId, sheetName, row) {
-  const requests = [];
+async function writeHeaderUsersNoEvents(sheetId, sheetName, row, requests, valueUpdates) {
   requests.push({
     "repeatCell": {
       "range": {
@@ -1047,18 +1050,14 @@ async function writeHeaderUsersNoEvents(sheets, organization, sheetId, sheetName
       "mergeType": "MERGE_ALL"
     }
   });
-  const batchUpdateRequest = {requests};
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: organization.spreadsheetId,
-    resource: batchUpdateRequest,
+
+  valueUpdates.push({
+    range: `${sheetName}!A${row + 1}`,
+    values: [['БЕЗ извънреден труд за месеца']]
   });
-  await updateInRange(sheets, organization.spreadsheetId,
-    [['БЕЗ извънреден труд за месеца']],
-    `${sheetName}!A${row + 1}`);
 }
 
-async function writeUserNoEvents(sheets, organization, sheetId, sheetName, userName, row) {
-  const requests = [];
+async function writeUserNoEvents(sheetId, sheetName, userName, row, requests, valueUpdates) {
   requests.push({
     "repeatCell": {
       "range": {
@@ -1111,12 +1110,11 @@ async function writeUserNoEvents(sheets, organization, sheetId, sheetName, userN
       "mergeType": "MERGE_ALL"
     }
   });
-  const batchUpdateRequest = {requests};
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: organization.spreadsheetId,
-    resource: batchUpdateRequest,
+
+  valueUpdates.push({
+    range: `${sheetName}!A${row + 1}`,
+    values: [[userName]]
   });
-  await updateInRange(sheets, organization.spreadsheetId, [[userName]], `${sheetName}!A${row + 1}`);
 }
 
 function monthYearToText(monthKey) {
