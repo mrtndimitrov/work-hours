@@ -13,7 +13,7 @@ export class UserReportComponent {
   months: any[] = [];
   groupedEvents: any = {};
   selectedMonth: string = '';
-  constructor(private eventsService: EventsService, private usersService: UsersService) {
+  constructor(public eventsService: EventsService, private usersService: UsersService) {
     this.usersService.getCurrentUser().then((user: User) => {
       this.eventsService.getEventsPerMonths(user.uid).then((data: any) => {
         this.groupedEvents = data;

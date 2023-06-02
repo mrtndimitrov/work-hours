@@ -1,5 +1,6 @@
 import { AbstractControl, UntypedFormArray, UntypedFormControl, UntypedFormGroup, ValidatorFn } from '@angular/forms';
 import { Event } from '../models/event';
+import {EventsService} from "../services/events.service";
 
 export function validateAllFormFields(formGroup: UntypedFormGroup) {
   Object.keys(formGroup.controls).forEach(field => {
@@ -55,6 +56,41 @@ export function handleHolidays(holidays: any) {
   for (const stringDate of holidays.excludes) {
     document.querySelectorAll(`[data-date="${stringDate}"]`).forEach((element: Element) => {
       element.classList.remove('holiday');
+    });
+  }
+}
+
+export function handleSpecialDays(events: Event[], eventsService: EventsService) {
+  console.log('YYYYYYYYYYYYYYYYYYYYY')
+  console.log(events)
+  if (!events) {
+    return;
+  }
+  // remove all special days first
+  document.querySelectorAll(`td.vacation`).forEach((element: Element) => {
+    element.classList.remove('vacation');
+  });
+  document.querySelectorAll(`td.illness`).forEach((element: Element) => {
+    element.classList.remove('illness');
+  });
+  // now add the manually included special days
+  for (const event of events) {
+    if (event.holiday || !event.specialDay) {
+      continue;
+    }
+    console.log('SSSSSSSSSSS')
+    const stringDate = `${event.date.getUTCFullYear()}-${event.date.getUTCMonth() > 8 ?
+      event.date.getUTCMonth() + 1 : `0${event.date.getUTCMonth() + 1}`}-${event.date.getUTCDate() > 9 ?
+      event.date.getUTCDate() : `0${event.date.getUTCDate()}`}`;
+    console.log(stringDate)
+    document.querySelectorAll(`[data-date="${stringDate}"]`).forEach((element: Element) => {
+      console.log('XXXXXXXXXXXXXXXXX')
+      console.log(event.specialDay)
+      if (event.specialDay === eventsService.SPECIAL_DAY_ILLNESS) {
+        element.classList.add('illness');
+      } else if (event.specialDay === eventsService.SPECIAL_DAY_VACATION) {
+        element.classList.add('vacation');
+      }
     });
   }
 }

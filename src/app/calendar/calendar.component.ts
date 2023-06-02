@@ -1,11 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CalendarOptions, EventClickArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Router } from '@angular/router';
 import { EventsService } from '../services/events.service';
 import { Event } from '../models/event';
-import { handleHolidays } from '../shared/helpers';
+import {handleHolidays, handleSpecialDays} from '../shared/helpers';
 import { OrganizationsService } from '../services/organizations.service';
 import { Organization } from '../models/organization';
 
@@ -14,7 +14,7 @@ import { Organization } from '../models/organization';
   templateUrl: './calendar.component.html',
   styleUrls: ['./calendar.component.scss']
 })
-export class CalendarComponent implements OnInit{
+export class CalendarComponent {
   events: Event[] = [];
   calendarOptions: CalendarOptions = {
     initialView: 'dayGridMonth',
@@ -29,14 +29,16 @@ export class CalendarComponent implements OnInit{
     datesSet: async () => {
       const organization: Organization = await this.organizationsService.getCurrentOrganization();
       handleHolidays(organization.holidays);
+      handleSpecialDays(this.events, this.eventsService);
     }
   };
 
   constructor(private router: Router, private eventsService: EventsService,
-              private organizationsService: OrganizationsService) {}
-
-  async ngOnInit() {
-    this.events = await this.eventsService.listEvents();
+              private organizationsService: OrganizationsService) {
+    this.eventsService.listEvents().then((events: Event[]) => {
+      this.events = events;
+      handleSpecialDays(this.events, this.eventsService);
+    });
   }
 
   handleDateClick(arg: any) {

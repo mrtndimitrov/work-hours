@@ -5,5 +5,6 @@ export interface Event {
   hours: number;
   workDone: string;
   reason: string;
+  specialDay?: number;
   holiday?: boolean;
 }

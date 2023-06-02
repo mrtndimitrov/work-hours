@@ -36,3 +36,33 @@ td.holiday {
     font-size: 0.8em;
   }
 }
+
+td.illness {
+  background-color: rgba(148, 245, 147, 0.5);
+
+  &::after {
+    content: 'Болничен';
+    position: absolute;
+    width: 100%;
+    text-align: right;
+    bottom:0;
+    right:0;
+    z-index: 10;
+    font-size: 0.8em;
+  }
+}
+
+td.vacation {
+  background-color: rgb(255, 244, 241);
+
+  &::after {
+    content: 'Отпуск';
+    position: absolute;
+    width: 100%;
+    text-align: right;
+    bottom:0;
+    right:0;
+    z-index: 10;
+    font-size: 0.8em;
+  }
+}

@@ -14,6 +14,10 @@ import { getApp } from '@angular/fire/app';
   providedIn: 'root'
 })
 export class EventsService {
+  SPECIAL_DAY_NONE = 0;
+  SPECIAL_DAY_ILLNESS = 1;
+  SPECIAL_DAY_VACATION = 2;
+
   eventsPerUser: any = {};
 
   constructor(private db: AngularFireDatabase, private organizationsService: OrganizationsService,
@@ -63,6 +67,7 @@ export class EventsService {
     const updates: any = {};
     updates[`events/${organization.key}/${user.uid}/${newEventKey}`] = {
       date: `${year}-${month > 9 ? month : `0${month}`}-${day > 9 ? day : `0${day}`}`,
+      specialDay: event.specialDay,
       hours: event.hours,
       workDone: event.workDone,
       reason: event.reason
@@ -87,6 +92,7 @@ export class EventsService {
     const updates: any = {};
     updates[`events/${organization.key}/${user.uid}/${event.id}`] = {
       date: `${year}-${month > 9 ? month : `0${month}`}-${day > 9 ? day : `0${day}`}`,
+      specialDay: event.specialDay,
       hours: event.hours,
       workDone: event.workDone,
       reason: event.reason
@@ -216,5 +222,18 @@ export class EventsService {
     .catch((error) => {
       return {error};
     });
+  }
+
+  printHolidayString(event: Event) {
+    if (event.holiday) {
+      return 'Да';
+    }
+    if (event.specialDay === this.SPECIAL_DAY_VACATION) {
+      return 'Да (отпуск)';
+    }
+    if (event.specialDay === this.SPECIAL_DAY_ILLNESS) {
+      return 'Да (болничен)';
+    }
+    return 'Не';
   }
 }
