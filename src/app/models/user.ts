@@ -5,4 +5,6 @@ export interface User {
   lastName: string;
   role: string;
   organization: string;
+  vacationDays: string[];
+  illnessDays: string[];
 }

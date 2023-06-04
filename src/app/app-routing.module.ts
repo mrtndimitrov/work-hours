@@ -12,6 +12,8 @@ import { InvitationsComponent } from './invitations/invitations.component';
 import { HolidaysComponent } from './holidays/holidays.component';
 import { UserReportComponent } from './user-report/user-report.component';
 import { OrganizationReportComponent } from './organization-report/organization-report.component';
+import { VacationDaysComponent } from "./vacation-days/vacation-days.component";
+import { IllnessDaysComponent } from "./illness-days/illness-days.component";
 
 const routes: Routes = [
   {
@@ -19,6 +21,8 @@ const routes: Routes = [
       {path: '', component: DashboardComponent},
       {path: 'settings', component: SettingsComponent},
       {path: 'calendar', component: CalendarComponent},
+      {path: 'vacation-days', component: VacationDaysComponent},
+      {path: 'illness-days', component: IllnessDaysComponent},
       {path: 'new-event', component: EventComponent},
       {path: 'user-report', component: UserReportComponent},
       {path: 'event/:eventId', component: EventComponent},

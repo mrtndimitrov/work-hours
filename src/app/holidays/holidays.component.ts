@@ -4,7 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { OrganizationsService } from '../services/organizations.service';
 import { Organization } from '../models/organization';
-import { handleHolidays } from '../shared/helpers';
+import { buildCalendarHolidays } from '../shared/helpers';
 
 @Component({
   selector: 'app-holidays',
@@ -22,14 +22,14 @@ export class HolidaysComponent {
     select: this.handleDateClick.bind(this),
     firstDay: 1,
     datesSet: () => {
-      handleHolidays(this.holidays);
+      buildCalendarHolidays(this.holidays);
     }
   };
 
   constructor(private organizationsService: OrganizationsService) {
     this.organizationsService.getCurrentOrganization().then((organization: Organization) => {
       this.holidays = organization.holidays;
-      handleHolidays(this.holidays);
+      buildCalendarHolidays(this.holidays);
     });
   }
 
@@ -55,7 +55,7 @@ export class HolidaysComponent {
         this.holidays.includes.push(arg.startStr)
       }
     }
-    handleHolidays(this.holidays);
+    buildCalendarHolidays(this.holidays);
     await this.organizationsService.setHolidays(this.holidays);
   }
 }

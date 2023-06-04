@@ -44,7 +44,6 @@ export class EventComponent {
               private messageService: MessageService) {
     this.form = new FormGroup({
       'date': new FormControl('', Validators.required),
-      'specialDay': new FormControl(''),
       'hours': new FormControl('', Validators.required),
       'workDone': new FormControl('', Validators.required),
       'reason': new FormControl('', Validators.required),
@@ -56,8 +55,6 @@ export class EventComponent {
         this.event = event;
         this.form.get('date')?.setValue(event.date);
         this.form.get('date')?.disable();
-        this.form.get('specialDay')?.setValue(event.specialDay);
-        this.form.get('specialDay')?.disable();
         this.form.get('hours')?.setValue(event.hours);
         this.form.get('hours')?.disable();
         this.form.get('reason')?.setValue({str: event.reason});
@@ -89,7 +86,6 @@ export class EventComponent {
     const workDoneControl: AbstractControl = this.form.get('workDone')!;
     if (this.event) {
       this.event.date = eventDate;
-      this.event.specialDay = this.form.get('specialDay')?.value;
       this.event.hours = this.form.get('hours')?.value;
       this.event.reason = reasonControl.value.str ? reasonControl.value.str : reasonControl.value;
       this.event.workDone = workDoneControl.value.str ? workDoneControl.value.str : workDoneControl.value;
@@ -98,7 +94,6 @@ export class EventComponent {
     } else {
       this.event = {
         date: eventDate,
-        specialDay: this.form.get('specialDay')?.value,
         hours: this.form.get('hours')?.value,
         reason: reasonControl.value.str ? reasonControl.value.str : reasonControl.value,
         workDone: workDoneControl.value.str ? workDoneControl.value.str : workDoneControl.value,
@@ -125,14 +120,12 @@ export class EventComponent {
   toggleEditMode() {
     if (this.editMode) {
       this.form.get('date')?.disable();
-      this.form.get('specialDay')?.disable();
       this.form.get('hours')?.disable();
       this.form.get('reason')?.disable();
       this.form.get('workDone')?.disable();
       this.editMode = false;
     } else {
       this.form.get('date')?.enable();
-      this.form.get('specialDay')?.enable();
       this.form.get('hours')?.enable();
       this.form.get('reason')?.enable();
       this.form.get('workDone')?.enable();

@@ -70,4 +70,46 @@ export class UsersService {
     }
     return users;
   }
+
+  async getVacationDays(organizationKey: string, uid: string | null = null) {
+    if (!uid) {
+      const user: User = await this.getCurrentUser();
+      uid = user.uid;
+    }
+    const dbRef = ref(getDatabase());
+    const snapshot = await get(child(dbRef, `users_organizations/${uid}_${organizationKey}/vacation_days`));
+    if (snapshot.exists()) {
+      return snapshot.val();
+    } else {
+      return [];
+    }
+  }
+
+  async setVacationDays(organizationKey: string, vacationDays: string[]) {
+    const user: User = await this.getCurrentUser();
+    user.vacationDays = vacationDays;
+    const db = getDatabase();
+    await set(ref(db, `users_organizations/${user.uid}_${organizationKey}/vacation_days`), vacationDays);
+  }
+
+  async getIllnessDays(organizationKey: string, uid: string | null = null) {
+    if (!uid) {
+      const user: User = await this.getCurrentUser();
+      uid = user.uid;
+    }
+    const dbRef = ref(getDatabase());
+    const snapshot = await get(child(dbRef, `users_organizations/${uid}_${organizationKey}/illness_days`));
+    if (snapshot.exists()) {
+      return snapshot.val();
+    } else {
+      return [];
+    }
+  }
+
+  async setIllnessDays(organizationKey: string, illnessDays: string[]) {
+    const user: User = await this.getCurrentUser();
+    user.illnessDays = illnessDays;
+    const db = getDatabase();
+    await set(ref(db, `users_organizations/${user.uid}_${organizationKey}/illness_days`), illnessDays);
+  }
 }

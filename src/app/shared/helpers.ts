@@ -1,6 +1,6 @@
 import { AbstractControl, UntypedFormArray, UntypedFormControl, UntypedFormGroup, ValidatorFn } from '@angular/forms';
-import { Event } from '../models/event';
-import {EventsService} from "../services/events.service";
+import { EventsService } from "../services/events.service";
+import { User } from "../models/user";
 
 export function validateAllFormFields(formGroup: UntypedFormGroup) {
   Object.keys(formGroup.controls).forEach(field => {
@@ -34,7 +34,7 @@ export function PasswordMatchValidator(formControl: AbstractControl): ValidatorF
   };
 }
 
-export function handleHolidays(holidays: any) {
+export function buildCalendarHolidays(holidays: any) {
   if (!holidays.includes) {
     return;
   }
@@ -60,37 +60,34 @@ export function handleHolidays(holidays: any) {
   }
 }
 
-export function handleSpecialDays(events: Event[], eventsService: EventsService) {
-  console.log('YYYYYYYYYYYYYYYYYYYYY')
-  console.log(events)
-  if (!events) {
+export function buildCalendarVacationDays(vacationDays: string[]) {
+  if (!vacationDays) {
     return;
   }
-  // remove all special days first
-  document.querySelectorAll(`td.vacation`).forEach((element: Element) => {
-    element.classList.remove('vacation');
+  // remove all vacation days first
+  document.querySelectorAll(`td.vacation-day`).forEach((element: Element) => {
+    element.classList.remove('vacation-day');
   });
-  document.querySelectorAll(`td.illness`).forEach((element: Element) => {
-    element.classList.remove('illness');
+  // now add the manually included vacation days
+  for (const vacationDay of vacationDays) {
+    document.querySelectorAll(`[data-date="${vacationDay}"]`).forEach((element: Element) => {
+      element.classList.add('vacation-day');
+    });
+  }
+}
+
+export function buildCalendarIllnessDays(illnessDays: string[]) {
+  if (!illnessDays) {
+    return;
+  }
+  // remove all illness days first
+  document.querySelectorAll(`td.illness-day`).forEach((element: Element) => {
+    element.classList.remove('illness-day');
   });
-  // now add the manually included special days
-  for (const event of events) {
-    if (event.holiday || !event.specialDay) {
-      continue;
-    }
-    console.log('SSSSSSSSSSS')
-    const stringDate = `${event.date.getUTCFullYear()}-${event.date.getUTCMonth() > 8 ?
-      event.date.getUTCMonth() + 1 : `0${event.date.getUTCMonth() + 1}`}-${event.date.getUTCDate() > 9 ?
-      event.date.getUTCDate() : `0${event.date.getUTCDate()}`}`;
-    console.log(stringDate)
-    document.querySelectorAll(`[data-date="${stringDate}"]`).forEach((element: Element) => {
-      console.log('XXXXXXXXXXXXXXXXX')
-      console.log(event.specialDay)
-      if (event.specialDay === eventsService.SPECIAL_DAY_ILLNESS) {
-        element.classList.add('illness');
-      } else if (event.specialDay === eventsService.SPECIAL_DAY_VACATION) {
-        element.classList.add('vacation');
-      }
+  // now add the manually included illness days
+  for (const illnessDay of illnessDays) {
+    document.querySelectorAll(`[data-date="${illnessDay}"]`).forEach((element: Element) => {
+      element.classList.add('illness-day');
     });
   }
 }

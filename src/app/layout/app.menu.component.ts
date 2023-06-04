@@ -38,6 +38,8 @@ export class AppMenuComponent implements OnInit {
           {label: 'Календар', icon: 'pi pi-fw pi-calendar', routerLink: ['/calendar']},
           {label: 'Въведи нов', icon: 'pi pi-fw pi-check-square', routerLink: ['/new-event']},
           {label: ' Отчет', icon: 'pi pi-fw pi-table', routerLink: ['/user-report']},
+          {label: ' Почивни дни', icon: 'pi pi-fw pi-table', routerLink: ['/vacation-days']},
+          {label: ' Болнични дни', icon: 'pi pi-fw pi-table', routerLink: ['/illness-days']},
         ]
       });
       if (organization.myRole === 'admin') {

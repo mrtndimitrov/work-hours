@@ -26,7 +26,7 @@
           <tr>
             <td>{{ event.date | date: 'dd.MM.yyyy' }}</td>
             <td>{{ event.hours }}</td>
-            <td>{{ event.holiday ? 'Да' : 'Не' }}</td>
+            <td>{{ eventsService.printHolidayString(event) }}</td>
             <td>{{ event.workDone }}</td>
             <td>{{ event.reason }}</td>
           </tr>

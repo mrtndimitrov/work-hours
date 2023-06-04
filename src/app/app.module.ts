@@ -46,6 +46,8 @@ import { UserReportComponent } from './user-report/user-report.component';
 import { ChartModule } from 'primeng/chart';
 import { OrganizationReportComponent } from './organization-report/organization-report.component';
 import { AutoCompleteModule } from 'primeng/autocomplete';
+import { VacationDaysComponent } from './vacation-days/vacation-days.component';
+import { IllnessDaysComponent } from './illness-days/illness-days.component';
 
 
 @NgModule({
@@ -60,7 +62,9 @@ import { AutoCompleteModule } from 'primeng/autocomplete';
     InvitationsComponent,
     HolidaysComponent,
     UserReportComponent,
-    OrganizationReportComponent
+    OrganizationReportComponent,
+    VacationDaysComponent,
+    IllnessDaysComponent
   ],
   imports: [
     BrowserModule,

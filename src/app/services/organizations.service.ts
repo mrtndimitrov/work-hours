@@ -14,7 +14,6 @@ import { UsersService } from './users.service';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from '@angular/fire/functions';
 import { getApp } from '@angular/fire/app';
 import { environment } from '../../environments/environment';
-import {handleHolidays} from "../shared/helpers";
 
 @Injectable({
   providedIn: 'root'
@@ -41,7 +40,7 @@ export class OrganizationsService {
         const organization: Organization = await this.getOrganization(item.organization);
         organization.myRole = item.role;
         organization.isDefault = item.default;
-        this.handleHolidays(organization);
+        this.parseHolidays(organization);
         organization.invitations = [];
         organization.users = [];
         organizations.push(organization);
@@ -63,7 +62,7 @@ export class OrganizationsService {
     return {key, ...snapshot.val()};
   }
 
-  private handleHolidays(organization: Organization) {
+  private parseHolidays(organization: Organization) {
     organization.holidays = organization.holidays ? JSON.parse(organization.holidays) : {includes: [], excludes: []};
     const includes = [];
     for (const includeStr of organization.holidays.includes) {
@@ -207,7 +206,7 @@ export class OrganizationsService {
     const currentOrganization: Organization = await this.getCurrentOrganization();
     holidays = JSON.stringify(holidays);
     currentOrganization.holidays = holidays;
-    this.handleHolidays(currentOrganization);
+    this.parseHolidays(currentOrganization);
     await set(ref(db, `organizations/${currentOrganization.key}/holidays`), holidays);
   }
 

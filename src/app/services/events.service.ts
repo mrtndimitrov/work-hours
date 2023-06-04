@@ -67,7 +67,6 @@ export class EventsService {
     const updates: any = {};
     updates[`events/${organization.key}/${user.uid}/${newEventKey}`] = {
       date: `${year}-${month > 9 ? month : `0${month}`}-${day > 9 ? day : `0${day}`}`,
-      specialDay: event.specialDay,
       hours: event.hours,
       workDone: event.workDone,
       reason: event.reason
@@ -92,7 +91,6 @@ export class EventsService {
     const updates: any = {};
     updates[`events/${organization.key}/${user.uid}/${event.id}`] = {
       date: `${year}-${month > 9 ? month : `0${month}`}-${day > 9 ? day : `0${day}`}`,
-      specialDay: event.specialDay,
       hours: event.hours,
       workDone: event.workDone,
       reason: event.reason
@@ -136,6 +134,8 @@ export class EventsService {
 
   async getEventsPerMonths(uid: string) {
     const organization: Organization = await this.organizationsService.getCurrentOrganization();
+    const vacationDays = await this.usersService.getVacationDays(organization.key, uid);
+    const illnessDays = await this.usersService.getIllnessDays(organization.key, uid);
     const events: Event[] = await this.listEvents(uid);
     const months: any = {};
     for (const event of events) {
@@ -184,6 +184,15 @@ export class EventsService {
           // it is just a working day
           event.holiday = false;
           months[key].workday_hours += event.hours;
+        }
+      }
+      // if the event is not during holidays, check if it is not during a special for this user day
+      if (!event.holiday) {
+        const keyDate = `${key}-${event.date.getUTCDate() > 9 ? event.date.getUTCDate() : `0${event.date.getUTCDate()}`}`;
+        if (vacationDays.indexOf(keyDate) !== -1) {
+          event.specialDay = this.SPECIAL_DAY_VACATION;
+        } else if (illnessDays.indexOf(keyDate) !== -1) {
+          event.specialDay = this.SPECIAL_DAY_ILLNESS;
         }
       }
       months[key].events.push(event);

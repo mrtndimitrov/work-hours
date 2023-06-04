@@ -5,9 +5,10 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { Router } from '@angular/router';
 import { EventsService } from '../services/events.service';
 import { Event } from '../models/event';
-import {handleHolidays, handleSpecialDays} from '../shared/helpers';
+import { buildCalendarHolidays, buildCalendarIllnessDays, buildCalendarVacationDays } from '../shared/helpers';
 import { OrganizationsService } from '../services/organizations.service';
 import { Organization } from '../models/organization';
+import { UsersService } from "../services/users.service";
 
 @Component({
   selector: 'app-calendar',
@@ -16,6 +17,9 @@ import { Organization } from '../models/organization';
 })
 export class CalendarComponent {
   events: Event[] = [];
+  holidays: any = {};
+  vacationDays: string[] = [];
+  illnessDays: string[] = [];
   calendarOptions: CalendarOptions = {
     initialView: 'dayGridMonth',
     plugins: [dayGridPlugin, interactionPlugin],
@@ -27,17 +31,27 @@ export class CalendarComponent {
     firstDay: 1,
     displayEventTime : false,
     datesSet: async () => {
-      const organization: Organization = await this.organizationsService.getCurrentOrganization();
-      handleHolidays(organization.holidays);
-      handleSpecialDays(this.events, this.eventsService);
+      buildCalendarVacationDays(this.vacationDays);
+      buildCalendarHolidays(this.holidays);
     }
   };
 
   constructor(private router: Router, private eventsService: EventsService,
-              private organizationsService: OrganizationsService) {
+              private organizationsService: OrganizationsService, private usersService: UsersService) {
     this.eventsService.listEvents().then((events: Event[]) => {
       this.events = events;
-      handleSpecialDays(this.events, this.eventsService);
+      this.organizationsService.getCurrentOrganization().then((organization: Organization) => {
+        this.holidays = organization.holidays;
+        buildCalendarHolidays(this.holidays);
+        this.usersService.getVacationDays(organization.key).then((vacationDays: string[]) => {
+          this.vacationDays = vacationDays;
+          buildCalendarVacationDays(this.vacationDays);
+          this.usersService.getIllnessDays(organization.key).then((illnessDays: string[]) => {
+            this.illnessDays = illnessDays;
+            buildCalendarIllnessDays(this.illnessDays);
+          });
+        });
+      });
     });
   }
 

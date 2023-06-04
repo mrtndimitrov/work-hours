@@ -22,11 +22,8 @@ td.fc-day {
   position: relative;
 }
 
-td.holiday {
-  background-color: lightgray;
-
+td.illness-day, td.vacation-day, td.holiday {
   &::after {
-    content: 'Почивен ден';
     position: absolute;
     width: 100%;
     text-align: right;
@@ -37,32 +34,23 @@ td.holiday {
   }
 }
 
-td.illness {
+td.illness-day {
   background-color: rgba(148, 245, 147, 0.5);
-
   &::after {
     content: 'Болничен';
-    position: absolute;
-    width: 100%;
-    text-align: right;
-    bottom:0;
-    right:0;
-    z-index: 10;
-    font-size: 0.8em;
   }
 }
 
-td.vacation {
+td.vacation-day {
   background-color: rgb(255, 244, 241);
-
   &::after {
     content: 'Отпуск';
-    position: absolute;
-    width: 100%;
-    text-align: right;
-    bottom:0;
-    right:0;
-    z-index: 10;
-    font-size: 0.8em;
+  }
+}
+
+td.holiday {
+  background-color: lightgray;
+  &::after {
+    content: 'Почивен ден';
   }
 }

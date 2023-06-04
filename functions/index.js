@@ -929,7 +929,7 @@ async function writeEvent(sheetId, sheetName, userName, event, row, i, requests,
   });
 
   const day = event.date.getUTCDate();
-  const month = event.date.getUTCMonth();
+  const month = event.date.getUTCMonth() + 1;
   const year = event.date.getUTCFullYear();
   event.date = `${day > 9 ? day : `0${day}`}.${month > 9 ? month : `0${month}`}.${year}`;
   const vals = [i, userName];

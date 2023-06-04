@@ -12,11 +12,6 @@
     <h5>Дата</h5>
     <p-calendar formControlName="date" dateFormat="dd-mm-yy г."
                 [class.ng-dirty]="form.get('date')!.invalid && form.get('date')!.touched"></p-calendar>
-    <h5>Специален ден</h5>
-    <p-dropdown [options]="[{name: 'Не е', value: eventsService.SPECIAL_DAY_NONE},
-                            {name: 'Болничен', value: eventsService.SPECIAL_DAY_ILLNESS},
-                            {name: 'Отпуск', value: eventsService.SPECIAL_DAY_VACATION}]"
-                optionLabel="name" optionValue="value" formControlName="specialDay"></p-dropdown>
     <h5>Часове</h5>
     <p-inputNumber formControlName="hours" [class.ng-dirty]="form.get('hours')!.invalid && form.get('hours')!.touched"
                    [step]="0.5" [min]="0.5" [max]="24" [showButtons]="true" [maxFractionDigits]="1"></p-inputNumber>

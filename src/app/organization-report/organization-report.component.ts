@@ -25,7 +25,7 @@ export class OrganizationReportComponent implements OnInit {
   usersGroupedEvents: any[] = [];
 
   constructor(private organizationsService: OrganizationsService, private messageService: MessageService,
-              private confirmationService: ConfirmationService, private usersService: UsersService, private eventsService: EventsService) {
+              private confirmationService: ConfirmationService, private usersService: UsersService, public eventsService: EventsService) {
   }
 
   async ngOnInit() {
