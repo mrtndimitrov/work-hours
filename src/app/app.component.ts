@@ -9,6 +9,9 @@ import {
   RouterEvent
 } from '@angular/router';
 import { filter } from 'rxjs';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from '@angular/fire/app-check';
+import { initializeApp } from '@angular/fire/app';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -22,6 +25,11 @@ export class AppComponent {
   readonly AppComponent = AppComponent;
 
   constructor(private router: Router) {
+    initializeAppCheck(initializeApp(environment.firebase), {
+      provider: new ReCaptchaEnterpriseProvider(environment.recaptchaKey),
+      isTokenAutoRefreshEnabled: true
+    });
+
     this.router.events.pipe(
       filter((e: Event): e is RouterEvent => e instanceof RouterEvent)
     ).subscribe((e: RouterEvent) => {

@@ -159,11 +159,10 @@ export class EventsService {
         if (excluded) {
           // consider it working day
           event.holiday = false;
-          months[key].workday_hours += event.hours;
         } else {
           // it is a weekend day and it is not excluded so consider it holiday
           event.holiday = true;
-          months[key].holiday_hours += event.hours;
+
         }
       } else {
         // ok. it is a working day. check if it is not included in holidays
@@ -179,20 +178,24 @@ export class EventsService {
         if (included) {
           // it is a working day but it is marked as holiday
           event.holiday = true;
-          months[key].holiday_hours += event.hours;
         } else {
           // it is just a working day
           event.holiday = false;
-          months[key].workday_hours += event.hours;
         }
       }
       // if the event is not during holidays, check if it is not during a special for this user day
-      if (!event.holiday) {
+      if (event.holiday) {
+        months[key].holiday_hours += event.hours;
+      } else {
         const keyDate = `${key}-${event.date.getUTCDate() > 9 ? event.date.getUTCDate() : `0${event.date.getUTCDate()}`}`;
         if (vacationDays.indexOf(keyDate) !== -1) {
           event.specialDay = this.SPECIAL_DAY_VACATION;
+          months[key].holiday_hours += event.hours;
         } else if (illnessDays.indexOf(keyDate) !== -1) {
           event.specialDay = this.SPECIAL_DAY_ILLNESS;
+          months[key].holiday_hours += event.hours;
+        } else {
+          months[key].workday_hours += event.hours;
         }
       }
       months[key].events.push(event);

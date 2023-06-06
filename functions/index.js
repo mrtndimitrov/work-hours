@@ -13,7 +13,8 @@ admin.initializeApp({
 exports.authorizeSheet = functions
   .region('europe-west1')
   .runWith({
-    timeoutSeconds: 540
+    timeoutSeconds: 540,
+    enforceAppCheck: true
   })
   .https.onCall(async (data, context) => {
   try {
@@ -103,7 +104,8 @@ exports.exportEventToExcel =
 exports.scheduleEventsReport = functions
   .region('europe-west1')
   .runWith({
-    timeoutSeconds: 540
+    timeoutSeconds: 540,
+    enforceAppCheck: true
   })
   .https.onCall(async (data, context) => {
   const response = await checkUserAdmin(data, context);
@@ -128,7 +130,8 @@ exports.scheduleEventsReport = functions
 exports.reportEvents = functions
   .region('europe-west1')
   .runWith({
-    timeoutSeconds: 540
+    timeoutSeconds: 540,
+    enforceAppCheck: true
   })
   .tasks.taskQueue({
   retryConfig: {
@@ -398,6 +401,17 @@ async function doReport(organizationKey, date) {
         usersWithoutEvents.push(user);
         continue;
       }
+      // get the user illness and vacation days
+      const illnessDaysSnapshot = await admin.database().ref(`users_organizations/${userOrganization.user}_${organizationKey}/illness_days`).once('value');
+      let illnessDays = [];
+      if (illnessDaysSnapshot.exists()) {
+        illnessDays = illnessDaysSnapshot.val();
+      }
+      const vacationDaysSnapshot = await admin.database().ref(`users_organizations/${userOrganization.user}_${organizationKey}/vacation_days`).once('value');
+      let vacationDays = [];
+      if (vacationDaysSnapshot.exists()) {
+        vacationDays = vacationDaysSnapshot.val();
+      }
       let userName = user.email;
       if (user.firstName) {
         userName = `${user.firstName} ${user.lastName}`;
@@ -416,11 +430,16 @@ async function doReport(organizationKey, date) {
             reason: [],
             workDone: []
           }
-          events[event.date].isHoliday = isHoliday(organization, events[event.date]);
+          events[event.date].isHoliday = (isHoliday(organization, events[event.date], vacationDays, illnessDays)
+            || isSpecialDay(event.date, vacationDays, illnessDays));
         }
         events[event.date].hours += event.hours;
-        events[event.date].reason.push(event.reason);
-        events[event.date].workDone.push(event.workDone);
+        if (events[event.date].reason.indexOf(event.reason) === -1) {
+          events[event.date].reason.push(event.reason);
+        }
+        if (events[event.date].workDone.indexOf(event.workDone) === -1) {
+          events[event.date].workDone.push(event.workDone);
+        }
         if (events[event.date].isHoliday) {
           totalHoursHolidays += event.hours;
         } else {
@@ -1174,4 +1193,8 @@ function isHoliday(organization, event) {
       return false;
     }
   }
+}
+
+function isSpecialDay(eventDate, vacationDays, illnessDays) {
+  return vacationDays.indexOf(eventDate) !== -1 || illnessDays.indexOf(eventDate) !== -1;
 }
