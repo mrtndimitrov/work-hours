@@ -6,6 +6,8 @@ import { AppComponent } from '../app.component';
 import { map } from 'rxjs/operators';
 import { PasswordMatchValidator } from '../shared/helpers';
 import { UsersService } from '../services/users.service';
+import { MessageService } from 'primeng/api';
+import {em} from "@fullcalendar/core/internal-common";
 
 @Component({
   selector: 'app-login',
@@ -13,7 +15,7 @@ import { UsersService } from '../services/users.service';
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent implements OnInit {
-  isLogin: boolean = true;
+  mode: string = 'login';
   loginForm: FormGroup = new FormGroup({
     'email': new FormControl('', [Validators.required, Validators.email]),
     'password': new FormControl('', Validators.required)
@@ -25,9 +27,16 @@ export class LoginComponent implements OnInit {
     'password2': new FormControl('', [])
   });
 
-  constructor(public router: Router, private authService: AuthenticationService, private usersService: UsersService) {
+  lostPasswordForm: FormGroup = new FormGroup({
+    'email': new FormControl('', [Validators.required, Validators.email])
+  });
+
+  constructor(public router: Router, private authService: AuthenticationService, private usersService: UsersService,
+              private messageService: MessageService) {
     if (this.router.url.indexOf('register') !== -1) {
-      this.isLogin = false;
+      this.mode = 'register';
+    } else if (this.router.url.indexOf('lost-password') !== -1) {
+      this.mode = 'lost-password';
     }
     this.registerForm.get('password2')!.setValidators([Validators.required, PasswordMatchValidator(this.registerForm)]);
   }
@@ -60,6 +69,20 @@ export class LoginComponent implements OnInit {
     this.authService.register(email, password1).subscribe(async (e: any) => {
       await this.usersService.registerUser(e.user.uid, email);
       this.router.navigate(['/settings']);
+    });
+  }
+
+  lostPassword() {
+    if (this.lostPasswordForm.invalid) {
+      return;
+    }
+    AppComponent.toggleProgressBar();
+    const {email} = this.lostPasswordForm.value;
+    this.authService.lostPassword(email).subscribe(() => {
+      AppComponent.toggleProgressBar();
+      this.messageService.add({severity:'success', summary:'Успешно изпратен имейл',
+        detail:'Моля, отворете го за допълнителни инструкции', key: 'app-toast'});
+      this.router.navigate(['/login']);
     });
   }
 }

@@ -40,6 +40,7 @@ export class CalendarComponent {
               private organizationsService: OrganizationsService, private usersService: UsersService) {
     this.eventsService.listEvents().then((events: Event[]) => {
       this.events = events;
+      console.log(events)
       this.organizationsService.getCurrentOrganization().then((organization: Organization) => {
         this.holidays = organization.holidays;
         buildCalendarHolidays(this.holidays);

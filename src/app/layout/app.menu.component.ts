@@ -42,6 +42,13 @@ export class AppMenuComponent implements OnInit {
           {label: 'Болнични дни', icon: 'pi pi-fw pi-table', routerLink: ['/illness-days']},
         ]
       });
+      this.model.push({
+        label: 'Потребители',
+        items: [
+          {label: 'Отпуск', icon: 'pi pi-fw pi-table', routerLink: ['/users-vacation-days']},
+          {label: 'Болнични дни', icon: 'pi pi-fw pi-table', routerLink: ['/users-illness-days']},
+        ]
+      });
       if (organization.myRole === 'admin') {
         this.model.push({
           label: 'Организация',

@@ -4,7 +4,8 @@ import {
   authState,
   connectAuthEmulator,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail
 } from '@angular/fire/auth';
 import { catchError, firstValueFrom, from, Observable } from 'rxjs';
 import { MessageService } from 'primeng/api';
@@ -58,6 +59,21 @@ export class AuthenticationService {
           severity: 'error',
           summary: 'Неуспешна регистрация',
           detail: 'Моля пробвайте пак.',
+          key: 'app-toast'
+        });
+        return new Observable();
+      }));
+  }
+
+  lostPassword(email: string) {
+    return from(sendPasswordResetEmail(this.auth, email))
+      .pipe(catchError((error: any) => {
+        AppComponent.toggleProgressBar();
+        console.error(error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Неуспешно изпратен имейл',
+          detail: error.message,
           key: 'app-toast'
         });
         return new Observable();

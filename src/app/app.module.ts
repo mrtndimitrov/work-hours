@@ -48,6 +48,8 @@ import { OrganizationReportComponent } from './organization-report/organization-
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { VacationDaysComponent } from './vacation-days/vacation-days.component';
 import { IllnessDaysComponent } from './illness-days/illness-days.component';
+import {UsersVacationDaysComponent} from "./users-vacation-days/users-vacation-days.component";
+import {UsersIllnessDaysComponent} from "./users-illness-days/users-illness-days.component";
 
 
 @NgModule({
@@ -64,7 +66,9 @@ import { IllnessDaysComponent } from './illness-days/illness-days.component';
     UserReportComponent,
     OrganizationReportComponent,
     VacationDaysComponent,
-    IllnessDaysComponent
+    IllnessDaysComponent,
+    UsersVacationDaysComponent,
+    UsersIllnessDaysComponent
   ],
   imports: [
     BrowserModule,

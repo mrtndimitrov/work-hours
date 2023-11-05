@@ -14,6 +14,8 @@ import { UserReportComponent } from './user-report/user-report.component';
 import { OrganizationReportComponent } from './organization-report/organization-report.component';
 import { VacationDaysComponent } from "./vacation-days/vacation-days.component";
 import { IllnessDaysComponent } from "./illness-days/illness-days.component";
+import {UsersVacationDaysComponent} from "./users-vacation-days/users-vacation-days.component";
+import {UsersIllnessDaysComponent} from "./users-illness-days/users-illness-days.component";
 
 const routes: Routes = [
   {
@@ -27,12 +29,15 @@ const routes: Routes = [
       {path: 'user-report', component: UserReportComponent},
       {path: 'event/:eventId', component: EventComponent},
       {path: 'users', component: UsersComponent},
+      {path: 'users-vacation-days', component: UsersVacationDaysComponent},
+      {path: 'users-illness-days', component: UsersIllnessDaysComponent},
       {path: 'invitations', component: InvitationsComponent},
       {path: 'holidays', component: HolidaysComponent},
       {path: 'organization-report', component: OrganizationReportComponent}]
   },
   {path: 'login', component: LoginComponent},
-  {path: 'register', component: LoginComponent}
+  {path: 'register', component: LoginComponent},
+  {path: 'lost-password', component: LoginComponent}
 ];
 
 @NgModule({
